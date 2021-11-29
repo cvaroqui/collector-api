@@ -21,8 +21,10 @@ Add a api container to an existing collector service:
 	rm = true
 	volume_mounts = /home/cvaroqui/dev/collector-api:/collector-api
 			{volume#0.name}/conf/nginx/ssl/:/ssl
+			{volume#0.name}/conf/db/:/db
 	environment = JWT_SIGN_KEY=/ssl/private_key
 		      JWT_VERIFY_KEY=/ssl/certificate_chain
+		      DB_PASSWORD_FILE=/db/password
 	entrypoint = /collector-api/collector-api
 	subset = front
 
@@ -34,4 +36,14 @@ Get a JWT from node credentials:
 Use the API authenticating with this token:
 
 	curl -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "http://collector:8080/nodes"
+
+Environment variables defaults
+==============================
+
+	DB_HOST=127.0.0.1
+	DB_PORT=3306
+	DB_USER=opensvc
+	DB_PASSWORD or DB_PASSWORD_FILE (required)
+	JWT_SIGN_KEY (required)
+	JWT_VERIFY_KEY=
 
