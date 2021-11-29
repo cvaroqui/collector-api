@@ -81,7 +81,9 @@ func main() {
 		addr = listen
 	}
 	log.Printf("Starting server on %v\n", addr)
-	http.ListenAndServe(addr, router())
+	if err := http.ListenAndServe(addr, router()); err != nil {
+		fatal(err)
+	}
 }
 
 func router() http.Handler {
