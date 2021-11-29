@@ -12,6 +12,20 @@ Build for alpine container
 Testing
 =======
 
+Add a api container to an existing collector service:
+
+	[container#api]
+	image = alpine
+	netns = container#0
+	restart = 1
+	rm = true
+	volume_mounts = /home/cvaroqui/dev/collector-api:/collector-api
+			{volume#0.name}/conf/nginx/ssl/:/ssl
+	environment = JWT_SIGN_KEY=/ssl/private_key
+		      JWT_VERIFY_KEY=/ssl/certificate_chain
+	entrypoint = /collector-api/collector-api
+	subset = front
+
 Get a JWT from node credentials:
 
 	PW=$(om node get --kw node.uuid)
