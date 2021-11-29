@@ -98,8 +98,8 @@ func router() http.Handler {
 	return r
 }
 
-func jsonEncode(w io.Writer, data interface{}) {
+func jsonEncode(w io.Writer, data interface{}) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "    ")
-	enc.Encode(data)
+	return enc.Encode(data)
 }

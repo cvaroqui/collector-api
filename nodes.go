@@ -92,9 +92,11 @@ type Node struct {
 	NodeFrozen          bool           `gorm:"column:node_frozen" json:"node_frozen"`
 }
 
-var nodeTable = newTable().
-	SetName("nodes").
-	SetEntry(Node{})
+var nodeTable = newTable("nodes").
+	SetEntry(Node{}).
+	SetJoin("node_tags", "left join node_tags on nodes.node_id=node_tags.node_id").
+	SetJoin("svcmon", "left join svcmon on nodes.node_id=svcmon.node_id").
+	SetJoin("services", "left join svcmon on nodes.node_id=svcmon.node_id left join services on svcmon.svc_id=services.svc_id")
 
 var (
 	reUUID, _ = regexp.Compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
@@ -187,7 +189,9 @@ func getNodes(w http.ResponseWriter, r *http.Request) {
 	data := make([]Node, 0)
 	td, err := nodeTable.MakeResponse(r, tx, &data)
 	if err != nil {
-		http.Error(w, fmt.Sprint(err), 404)
+		http.Error(w, fmt.Sprint(err), 500)
 	}
-	jsonEncode(w, td)
+	if err := jsonEncode(w, td); err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+	}
 }
