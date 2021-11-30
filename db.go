@@ -13,7 +13,10 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var db *gorm.DB
+var (
+	db     *gorm.DB
+	tables map[string]*table = map[string]*table{}
+)
 
 func dbOpen() (*gorm.DB, error) {
 	// DB_SLOW_QUERY_THRESHOLD
@@ -90,12 +93,11 @@ func dbOpen() (*gorm.DB, error) {
 	})
 }
 
-func dbMigrate(db *gorm.DB) error {
-	if err := db.Table("auth_node").AutoMigrate(&authNode{}); err != nil {
-		return err
-	}
-	if err := db.AutoMigrate(&Node{}); err != nil {
-		return err
+func dbMigrate() error {
+	for _, t := range tables {
+		if err := t.DBMigrate(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -105,7 +107,7 @@ func initDB() error {
 	if db, err = dbOpen(); err != nil {
 		return errors.Wrap(err, "connect database")
 	}
-	if err = dbMigrate(db); err != nil {
+	if err = dbMigrate(); err != nil {
 		return errors.Wrap(err, "migrate database schema")
 	}
 	return nil

@@ -72,9 +72,16 @@ func router() http.Handler {
 
 		r.Route("/nodes", func(r chi.Router) {
 			r.With(pager).Get("/", getNodes)
-			r.Route("/{nodeID}", func(r chi.Router) {
+			r.Route("/{id}", func(r chi.Router) {
 				r.Use(nodeCtx)
 				r.Get("/", getNode)
+			})
+			r.Route("/tags", func(r chi.Router) {
+				r.With(pager).Get("/", getNodeTags)
+				r.Route("/{id}", func(r chi.Router) {
+					r.Use(nodeTagCtx)
+					r.Get("/", getNodeTag)
+				})
 			})
 		})
 	})

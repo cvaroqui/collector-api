@@ -92,11 +92,13 @@ type Node struct {
 	NodeFrozen          bool           `gorm:"column:node_frozen" json:"node_frozen"`
 }
 
-var nodeTable = newTable("nodes").
-	SetEntry(Node{}).
-	SetJoin("node_tags", "left join node_tags on nodes.node_id=node_tags.node_id").
-	SetJoin("svcmon", "left join svcmon on nodes.node_id=svcmon.node_id").
-	SetJoin("services", "left join svcmon on nodes.node_id=svcmon.node_id left join services on svcmon.svc_id=services.svc_id")
+func init() {
+	tables["nodes"] = newTable("nodes").
+		SetEntry(Node{}).
+		SetJoin("node_tags", "left join node_tags on nodes.node_id=node_tags.node_id").
+		SetJoin("svcmon", "left join svcmon on nodes.node_id=svcmon.node_id").
+		SetJoin("services", "left join svcmon on nodes.node_id=svcmon.node_id left join services on svcmon.svc_id=services.svc_id")
+}
 
 var (
 	reUUID, _ = regexp.Compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
@@ -105,7 +107,7 @@ var (
 
 func nodeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "nodeID")
+		id := chi.URLParam(r, "id")
 		if reUUID.MatchString(id) {
 			n, err := getNodeByNodeID(id)
 			if err != nil {
@@ -182,12 +184,12 @@ func getNodeByID(id string) (Node, error) {
 
 func getNodes(w http.ResponseWriter, r *http.Request) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
-	tx := db.Table("nodes")
+	tx := tables["nodes"].DBTable()
 	if app, ok := claims["app"]; ok && app != "" {
 		tx = tx.Where("app = ?", app)
 	}
 	data := make([]Node, 0)
-	td, err := nodeTable.MakeResponse(r, tx, &data)
+	td, err := tables["node"].MakeResponse(r, tx, &data)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}

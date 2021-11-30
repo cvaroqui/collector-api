@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
@@ -25,6 +26,7 @@ type (
 	property struct {
 		Table string
 		Name  string
+		Desc  bool
 	}
 	tableResponseData []map[string]interface{}
 	tableResponseMeta struct {
@@ -41,14 +43,23 @@ type (
 )
 
 func parseProperty(s string, table string) property {
+	prop := property{}
+	if strings.HasPrefix(s, "~") {
+		prop.Desc = true
+		s = strings.TrimLeft(s, "~")
+	}
 	if s == "" {
-		return property{}
+		return prop
 	}
 	l := strings.SplitN(s, ".", 2)
 	if len(l) == 2 {
-		return property{Table: l[0], Name: l[1]}
+		prop.Table = l[0]
+		prop.Name = l[1]
+	} else {
+		prop.Table = table
+		prop.Name = l[0]
 	}
-	return property{Table: table, Name: l[0]}
+	return prop
 }
 
 func (t propMapping) MarshalJSON() ([]byte, error) {
@@ -74,6 +85,21 @@ func (t property) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+func (t property) SQLWithOrder() string {
+	s := t.SQL()
+	if t.Desc {
+		s += " DESC"
+	}
+	return s
+}
+
+func (t property) SQL() string {
+	if t.Table == "" {
+		return fmt.Sprintf("`%s`", t.Name)
+	}
+	return fmt.Sprintf("`%s`.`%s`", t.Table, t.Name)
+}
+
 func (t property) String() string {
 	if t.Table == "" {
 		return t.Name
@@ -91,6 +117,10 @@ func (t table) Name() string {
 	return t.name
 }
 
+func (t table) Entry() interface{} {
+	return t.entry
+}
+
 func (t *table) SetEntry(e interface{}) *table {
 	t.entry = e
 	t.makePropMap(e)
@@ -104,6 +134,14 @@ func (t *table) SetJoin(table, sql string) *table {
 
 func (t table) parseProperty(s string) property {
 	return parseProperty(s, t.name)
+}
+
+func (t table) DBMigrate() error {
+	return t.DBTable().AutoMigrate(t.entry)
+}
+
+func (t table) DBTable() *gorm.DB {
+	return db.Table(t.name)
 }
 
 func (t table) withJoins(tx *gorm.DB, props propSlice) *gorm.DB {
@@ -138,8 +176,13 @@ func (t table) MakeResponse(r *http.Request, tx *gorm.DB, data interface{}) (*ta
 	}
 
 	// ordering
-	for _, prop := range t.queryOrders(r) {
-		tx = tx.Order(prop.String())
+	qOrders := t.queryOrders(r)
+	if len(qOrders) > 0 {
+		sqlOrders := make([]string, len(qOrders))
+		for i, prop := range qOrders {
+			sqlOrders[i] = prop.SQLWithOrder()
+		}
+		tx = tx.Order(strings.Join(sqlOrders, ","))
 	}
 
 	result := tx.Count(&total)
