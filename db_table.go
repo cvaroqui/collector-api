@@ -26,17 +26,17 @@ type (
 	property struct {
 		Table string
 		Name  string
+		Remap string
 		Desc  bool
 	}
 	tableResponseData []map[string]interface{}
 	tableResponseMeta struct {
-		Total          int64       `json:"total"`
-		Offset         int         `json:"offset"`
-		Limit          int         `json:"limit"`
-		Count          int         `json:"count"`
-		AvailableProps propSlice   `json:"available_props"`
-		IncludedProps  propSlice   `json:"included_props"`
-		Mapping        propMapping `json:"mapping"`
+		Total          int64     `json:"total"`
+		Offset         int       `json:"offset"`
+		Limit          int       `json:"limit"`
+		Count          int       `json:"count"`
+		AvailableProps propSlice `json:"available_props"`
+		IncludedProps  propSlice `json:"included_props"`
 	}
 	propSlice   []property
 	propMapping map[property]string
@@ -44,6 +44,8 @@ type (
 
 func parseProperty(s string, table string) property {
 	prop := property{}
+
+	// negation prefix "~"
 	if strings.HasPrefix(s, "~") {
 		prop.Desc = true
 		s = strings.TrimLeft(s, "~")
@@ -51,7 +53,16 @@ func parseProperty(s string, table string) property {
 	if s == "" {
 		return prop
 	}
-	l := strings.SplitN(s, ".", 2)
+
+	// remapping
+	l := strings.SplitN(s, ":", 2)
+	if len(l) == 2 {
+		s = l[0]
+		prop.Remap = l[1]
+	}
+
+	// table.name split
+	l = strings.SplitN(s, ".", 2)
 	if len(l) == 2 {
 		prop.Table = l[0]
 		prop.Name = l[1]
@@ -146,7 +157,16 @@ func (t table) DBTable() *gorm.DB {
 
 func (t table) withJoins(tx *gorm.DB, props propSlice) *gorm.DB {
 	joined := make(map[string]interface{})
-	for _, prop := range props {
+	selects := make([]string, len(props))
+	for i, prop := range props {
+		var as string
+		if prop.Remap != "" {
+			as = prop.Remap
+		} else {
+			as = prop.String()
+		}
+		selects[i] = fmt.Sprintf("%s as `%s`", prop.SQL(), as)
+
 		if _, ok := joined[prop.Table]; ok {
 			// already joined
 			continue
@@ -156,10 +176,10 @@ func (t table) withJoins(tx *gorm.DB, props propSlice) *gorm.DB {
 			tx = tx.Joins(join)
 		}
 	}
-	return tx
+	return tx.Select(strings.Join(selects, ","))
 }
 
-func (t table) MakeResponse(r *http.Request, tx *gorm.DB, data interface{}) (*tableResponse, error) {
+func (t table) MakeResponse(r *http.Request, tx *gorm.DB, data2 interface{}) (*tableResponse, error) {
 	var total int64
 
 	// props selection
@@ -185,29 +205,47 @@ func (t table) MakeResponse(r *http.Request, tx *gorm.DB, data interface{}) (*ta
 		tx = tx.Order(strings.Join(sqlOrders, ","))
 	}
 
-	result := tx.Count(&total)
-	if result.Error != nil {
-		return nil, result.Error
+	if err := tx.Count(&total).Error; err != nil {
+		return nil, err
 	}
 
-	result = tx.Find(data)
-	if result.Error != nil {
-		return nil, result.Error
+	data := make([]map[string]interface{}, 0)
+	if err := tx.Find(&data).Error; err != nil {
+		return nil, err
 	}
 
 	td := &tableResponse{}
-	td.Data = t.remap(data, props)
+	td.Data = data
+	//td.Data = t.remap(data, props)
 	if queryMeta(r) {
 		td.Meta = &tableResponseMeta{
 			Total:          total,
 			Offset:         offset,
 			Limit:          limit,
 			Count:          len(td.Data),
-			AvailableProps: t.props(),
+			AvailableProps: availProps(props),
 			IncludedProps:  props,
 		}
 	}
 	return td, nil
+}
+
+func availProps(props []property) []property {
+	done := make(map[string]interface{})
+	ap := make([]property, 0)
+	for _, prop := range props {
+		if _, ok := done[prop.Table]; ok {
+			// table props already added
+			continue
+		}
+		if t, ok := tables[prop.Table]; !ok {
+			// unknown table
+			continue
+		} else {
+			ap = append(ap, t.props()...)
+		}
+	}
+	return ap
 }
 
 func (t *table) makePropMap(i interface{}) {

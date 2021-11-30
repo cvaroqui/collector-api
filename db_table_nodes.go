@@ -185,11 +185,12 @@ func getNodeByID(id string) (Node, error) {
 func getNodes(w http.ResponseWriter, r *http.Request) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
 	tx := tables["nodes"].DBTable()
+
 	if app, ok := claims["app"]; ok && app != "" {
-		tx = tx.Where("app = ?", app)
+		tx = tx.Where("nodes.app = ?", app)
 	}
-	data := make([]Node, 0)
-	td, err := tables["node"].MakeResponse(r, tx, &data)
+	//data := make([]Node, 0)
+	td, err := tables["nodes"].MakeResponse(r, tx, nil)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
