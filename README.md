@@ -44,6 +44,9 @@ Environment variables defaults
 	DB_PORT=3306
 	DB_USER=opensvc
 	DB_PASSWORD or DB_PASSWORD_FILE (required)
+	DB_SLOW_QUERY_THRESHOLD=1s
+	DB_LOG_LEVEL=silent
+
 	JWT_SIGN_KEY (required)
 	JWT_VERIFY_KEY=
 

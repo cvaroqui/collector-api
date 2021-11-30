@@ -137,7 +137,17 @@ func (t table) MakeResponse(r *http.Request, tx *gorm.DB, data interface{}) (*ta
 		tx = tx.Group(prop.String())
 	}
 
-	result := tx.Count(&total).Find(data)
+	// ordering
+	for _, prop := range t.queryOrders(r) {
+		tx = tx.Order(prop.String())
+	}
+
+	result := tx.Count(&total)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	result = tx.Find(data)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -233,22 +243,22 @@ func queryMeta(r *http.Request) bool {
 
 func (t table) queryProps(r *http.Request) propSlice {
 	s := r.URL.Query().Get("props")
-	l := strings.Split(s, ",")
-	props := make(propSlice, 0)
-	for _, s := range l {
-		if s == "" {
-			continue
-		}
-		props = append(props, t.parseProperty(s))
-	}
-	return props
+	return t.parsePropSlice(s)
 }
 
 func (t table) queryGroups(r *http.Request) propSlice {
 	s := r.URL.Query().Get("groupby")
-	l := strings.Split(s, ",")
+	return t.parsePropSlice(s)
+}
+
+func (t table) queryOrders(r *http.Request) propSlice {
+	s := r.URL.Query().Get("orderby")
+	return t.parsePropSlice(s)
+}
+
+func (t table) parsePropSlice(s string) propSlice {
 	props := make(propSlice, 0)
-	for _, s := range l {
+	for _, s := range strings.Split(s, ",") {
 		if s == "" {
 			continue
 		}
