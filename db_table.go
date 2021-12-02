@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/ssrathi/go-attr"
@@ -155,7 +156,51 @@ func (t table) DBTable() *gorm.DB {
 	return db.Table(t.name)
 }
 
+var (
+	reFilter = regexp.MustCompile(`([a-zA-Z_.]+)\s*(=|>| |~|>=|<=)\s*(.*)`)
+)
+
+func (t table) withFilters(tx *gorm.DB, filters []string) *gorm.DB {
+	for _, s := range filters {
+		l := reFilter.FindStringSubmatch(s)
+		if l == nil {
+			continue
+		}
+		if len(l) != 4 {
+			continue
+		}
+		var (
+			op, value string
+			neg       bool
+		)
+		switch l[2] {
+		case "~", " ":
+			op = "LIKE"
+		default:
+			op = l[2]
+		}
+		value = l[3]
+		if strings.HasPrefix(value, "!") {
+			neg = true
+			value = strings.TrimLeft(value, "~")
+		}
+		if strings.HasPrefix(value, "(") && op == " " {
+			op = "IN"
+		}
+		where := l[1] + " " + op + " ?"
+		if neg {
+			tx = tx.Not(where, value)
+		} else {
+			tx = tx.Where(where, value)
+		}
+	}
+	return tx
+}
+
 func (t table) withJoins(tx *gorm.DB, props propSlice) *gorm.DB {
+	if len(props) == 0 {
+		props = t.props()
+	}
 	joined := make(map[string]interface{})
 	selects := make([]string, len(props))
 	for i, prop := range props {
@@ -186,9 +231,9 @@ func (t table) MakeResponse(r *http.Request, tx *gorm.DB, data2 interface{}) (*t
 	props := t.queryProps(r)
 	tx = t.withJoins(tx, props)
 
-	// paging
-	offset, limit := page(r)
-	tx = tx.Offset(offset).Limit(limit)
+	// filters
+	filters := t.queryFilters(r)
+	tx = t.withFilters(tx, filters)
 
 	// grouping
 	for _, prop := range t.queryGroups(r) {
@@ -208,6 +253,10 @@ func (t table) MakeResponse(r *http.Request, tx *gorm.DB, data2 interface{}) (*t
 	if err := tx.Count(&total).Error; err != nil {
 		return nil, err
 	}
+
+	// paging
+	offset, limit := page(r)
+	tx = tx.Offset(offset).Limit(limit)
 
 	data := make([]map[string]interface{}, 0)
 	if err := tx.Find(&data).Error; err != nil {
@@ -320,6 +369,13 @@ func queryMeta(r *http.Request) bool {
 	default:
 		return true
 	}
+}
+
+func (t table) queryFilters(r *http.Request) []string {
+	if l, ok := r.URL.Query()["filters"]; ok {
+		return l
+	}
+	return []string{}
 }
 
 func (t table) queryProps(r *http.Request) propSlice {

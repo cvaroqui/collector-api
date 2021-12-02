@@ -84,6 +84,13 @@ func router() http.Handler {
 				})
 			})
 		})
+		r.Route("/tags", func(r chi.Router) {
+			r.With(pager).Get("/", getTags)
+			r.Route("/{id}", func(r chi.Router) {
+				r.Use(tagCtx)
+				r.Get("/", getTag)
+			})
+		})
 	})
 
 	// NodeAuth routes
