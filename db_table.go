@@ -14,11 +14,18 @@ import (
 )
 
 type (
+	tableRoute struct {
+		From, To string
+		Via      []string
+	}
+	tableJoin struct {
+		From, To string
+		Cols     [][]string
+	}
 	table struct {
 		name    string
 		entry   interface{}
 		propMap propMapping
-		joins   map[string]string
 	}
 	tableResponse struct {
 		Data tableResponseData  `json:"data"`
@@ -39,9 +46,96 @@ type (
 		AvailableProps propSlice `json:"available_props"`
 		IncludedProps  propSlice `json:"included_props"`
 	}
-	propSlice   []property
-	propMapping map[property]string
+	propSlice    []property
+	propMapping  map[property]string
+	joinedTables map[string]interface{}
+	request      struct {
+		tx     *gorm.DB
+		table  table
+		joined joinedTables
+		on     joinedTables
+	}
 )
+
+var (
+	reFilter   = regexp.MustCompile(`([a-zA-Z_.]+)\s*(=|>| |~|>=|<=)\s*(.*)`)
+	tableJoins = []tableJoin{
+		{From: "tags", To: "node_tags", Cols: [][]string{{"tag_id", "tag_id"}}},
+		{From: "tags", To: "svc_tags", Cols: [][]string{{"tag_id", "tag_id"}}},
+		{From: "nodes", To: "node_tags", Cols: [][]string{{"node_id", "node_id"}}},
+		{From: "nodes", To: "svcmon", Cols: [][]string{{"node_id", "node_id"}}},
+		{From: "services", To: "svcmon", Cols: [][]string{{"svc_id", "svc_id"}}},
+		{From: "services", To: "svc_tags", Cols: [][]string{{"svc_id", "svc_id"}}},
+		{From: "svcmon", To: "svc_tags", Cols: [][]string{{"svc_id", "svc_id"}}},
+		{From: "svcmon", To: "resmon", Cols: [][]string{{"node_id", "node_id"}, {"svc_id", "svc_id"}}},
+	}
+	tableRoutes = []tableRoute{
+		{From: "tags", To: "nodes", Via: []string{"node_tags"}},
+		{From: "tags", To: "services", Via: []string{"svc_tags"}},
+	}
+)
+
+func (t table) Request() *request {
+	req := request{
+		table:  t,
+		tx:     t.Table(),
+		joined: make(joinedTables),
+		on:     make(joinedTables),
+	}
+	return &req
+}
+
+func (t *request) Where(query interface{}, args ...interface{}) {
+	t.tx = t.tx.Where(query, args...)
+}
+
+func (t *request) Not(query interface{}, args ...interface{}) {
+	t.tx = t.tx.Not(query, args...)
+}
+
+func findJoin(from, to string) (tableJoin, bool) {
+	for _, j := range tableJoins {
+		if from == j.From && to == j.To {
+			return j, true
+		}
+		if to == j.From && from == j.To {
+			return j, true
+		}
+	}
+	return tableJoin{}, false
+}
+
+func (t joinedTables) Add(j tableJoin) {
+	s := j.Key()
+	t[s] = nil
+}
+func (t joinedTables) Has(j tableJoin) bool {
+	s := j.Key()
+	_, ok := t[s]
+	return ok
+}
+
+func genKey(a, b string) string {
+	if a < b {
+		return fmt.Sprintf("%s:%s", a, b)
+	} else {
+		return fmt.Sprintf("%s:%s", b, a)
+	}
+}
+
+func (t tableJoin) Key() string {
+	return genKey(t.From, t.To)
+}
+func (t tableJoin) String() string {
+	return t.SQL(t.To)
+}
+func (t tableJoin) SQL(s string) string {
+	cols := make([]string, len(t.Cols))
+	for i, col := range t.Cols {
+		cols[i] = fmt.Sprintf("`%s`.`%s`=`%s`.`%s`", t.From, col[0], t.To, col[1])
+	}
+	return fmt.Sprintf("LEFT JOIN `%s` ON %s", s, strings.Join(cols, " AND "))
+}
 
 func parseProperty(s string, table string) property {
 	prop := property{}
@@ -121,7 +215,6 @@ func (t property) String() string {
 
 func newTable(name string) *table {
 	t := table{name: name}
-	t.joins = make(map[string]string)
 	return &t
 }
 
@@ -139,28 +232,19 @@ func (t *table) SetEntry(e interface{}) *table {
 	return t
 }
 
-func (t *table) SetJoin(table, sql string) *table {
-	t.joins[table] = sql
-	return t
-}
-
 func (t table) parseProperty(s string) property {
 	return parseProperty(s, t.name)
 }
 
-func (t table) DBMigrate() error {
-	return t.DBTable().AutoMigrate(t.entry)
+func (t table) AutoMigrate() error {
+	return t.Table().AutoMigrate(t.entry)
 }
 
-func (t table) DBTable() *gorm.DB {
+func (t table) Table() *gorm.DB {
 	return db.Table(t.name)
 }
 
-var (
-	reFilter = regexp.MustCompile(`([a-zA-Z_.]+)\s*(=|>| |~|>=|<=)\s*(.*)`)
-)
-
-func (t table) withFilters(tx *gorm.DB, filters []string) *gorm.DB {
+func (t *request) withFilters(filters []string) {
 	for _, s := range filters {
 		l := reFilter.FindStringSubmatch(s)
 		if l == nil {
@@ -182,26 +266,33 @@ func (t table) withFilters(tx *gorm.DB, filters []string) *gorm.DB {
 		value = l[3]
 		if strings.HasPrefix(value, "!") {
 			neg = true
-			value = strings.TrimLeft(value, "~")
+			value = strings.TrimLeft(value, "!")
 		}
-		if strings.HasPrefix(value, "(") && op == " " {
-			op = "IN"
-		}
-		where := l[1] + " " + op + " ?"
-		if neg {
-			tx = tx.Not(where, value)
+		if value == "empty" {
+			where := fmt.Sprintf("%s IS NULL or %s = ?", l[1], l[1])
+			if neg {
+				t.tx = t.tx.Not(where, "")
+			} else {
+				t.tx = t.tx.Where(where, "")
+			}
 		} else {
-			tx = tx.Where(where, value)
+			if strings.HasPrefix(value, "(") && op == " " {
+				op = "IN"
+			}
+			where := l[1] + " " + op + " ?"
+			if neg {
+				t.tx = t.tx.Not(where, value)
+			} else {
+				t.tx = t.tx.Where(where, value)
+			}
 		}
 	}
-	return tx
 }
 
-func (t table) withJoins(tx *gorm.DB, props propSlice) *gorm.DB {
+func (t *request) withJoins(props propSlice) {
 	if len(props) == 0 {
-		props = t.props()
+		props = t.table.props()
 	}
-	joined := make(map[string]interface{})
 	selects := make([]string, len(props))
 	for i, prop := range props {
 		var as string
@@ -210,56 +301,103 @@ func (t table) withJoins(tx *gorm.DB, props propSlice) *gorm.DB {
 		} else {
 			as = prop.String()
 		}
+		t.AutoJoin(prop.Table)
 		selects[i] = fmt.Sprintf("%s as `%s`", prop.SQL(), as)
-
-		if _, ok := joined[prop.Table]; ok {
-			// already joined
-			continue
-		}
-		if join, ok := t.joins[prop.Table]; ok {
-			joined[prop.Table] = nil
-			tx = tx.Joins(join)
-		}
 	}
-	return tx.Select(strings.Join(selects, ","))
+	t.tx.Select(strings.Join(selects, ","))
 }
 
-func (t table) MakeResponse(r *http.Request, tx *gorm.DB, data2 interface{}) (*tableResponse, error) {
+// getHops returns
+//  []string{"svc_tags", "tags"} as the "svc to tags" route
+//  []string{"tags"} as the "svc_tags to tags" route
+func getHops(from, to string) []string {
+	for _, r := range tableRoutes {
+		routeKey := genKey(r.From, r.To)
+		if routeKey == genKey(from, to) {
+			return append(r.Via, to)
+		}
+		if routeKey == genKey(to, from) {
+			// return the reversed hops
+			s := append([]string{to}, r.Via...)
+			for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+				s[i], s[j] = s[j], s[i]
+			}
+			return s
+		}
+	}
+	return []string{to}
+}
+
+func (t *request) AutoJoin(table string) {
+	if table == t.table.name {
+		// self join, noop
+		return
+	}
+	here := t.table.name
+	for _, there := range getHops(t.table.name, table) {
+		j, ok := findJoin(here, there)
+		if !ok {
+			return
+		}
+		if t.joined.Has(j) {
+			// already joined
+		} else {
+			sql := j.SQL(there)
+			t.joined.Add(j)
+			t.tx = t.tx.Joins(sql)
+		}
+		here = there
+	}
+	return
+}
+
+func (t *request) withGroups(groups propSlice) {
+	for _, prop := range groups {
+		t.tx = t.tx.Group(prop.String())
+	}
+}
+
+func (t *request) withOrders(orders propSlice) {
+	if len(orders) == 0 {
+		return
+	}
+
+	sqlOrders := make([]string, len(orders))
+	for i, prop := range orders {
+		sqlOrders[i] = prop.SQLWithOrder()
+	}
+	t.tx = t.tx.Order(strings.Join(sqlOrders, ","))
+}
+
+func (t *request) MakeResponse(r *http.Request) (*tableResponse, error) {
 	var total int64
 
 	// props selection
-	props := t.queryProps(r)
-	tx = t.withJoins(tx, props)
+	props := t.table.queryProps(r)
+	t.withJoins(props)
 
 	// filters
-	filters := t.queryFilters(r)
-	tx = t.withFilters(tx, filters)
+	filters := t.table.queryFilters(r)
+	t.withFilters(filters)
 
 	// grouping
-	for _, prop := range t.queryGroups(r) {
-		tx = tx.Group(prop.String())
-	}
+	groups := t.table.queryGroups(r)
+	t.withGroups(groups)
 
 	// ordering
-	qOrders := t.queryOrders(r)
-	if len(qOrders) > 0 {
-		sqlOrders := make([]string, len(qOrders))
-		for i, prop := range qOrders {
-			sqlOrders[i] = prop.SQLWithOrder()
-		}
-		tx = tx.Order(strings.Join(sqlOrders, ","))
-	}
+	orders := t.table.queryOrders(r)
+	t.withOrders(orders)
 
-	if err := tx.Count(&total).Error; err != nil {
+	if err := t.tx.Count(&total).Error; err != nil {
 		return nil, err
 	}
 
 	// paging
 	offset, limit := page(r)
-	tx = tx.Offset(offset).Limit(limit)
+	t.tx = t.tx.Offset(offset).Limit(limit)
 
 	data := make([]map[string]interface{}, 0)
-	if err := tx.Find(&data).Error; err != nil {
+	if err := t.tx.Find(&data).Error; err != nil {
 		return nil, err
 	}
 
@@ -279,7 +417,7 @@ func (t table) MakeResponse(r *http.Request, tx *gorm.DB, data2 interface{}) (*t
 	return td, nil
 }
 
-func availProps(props []property) []property {
+func availProps(props propSlice) propSlice {
 	done := make(map[string]interface{})
 	ap := make([]property, 0)
 	for _, prop := range props {
@@ -294,7 +432,7 @@ func availProps(props []property) []property {
 			ap = append(ap, t.props()...)
 		}
 	}
-	return ap
+	return propSlice(ap)
 }
 
 func (t *table) makePropMap(i interface{}) {

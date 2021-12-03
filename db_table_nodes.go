@@ -93,11 +93,7 @@ type Node struct {
 }
 
 func init() {
-	tables["nodes"] = newTable("nodes").
-		SetEntry(Node{}).
-		SetJoin("node_tags", "left join node_tags on nodes.node_id=node_tags.node_id").
-		SetJoin("svcmon", "left join svcmon on nodes.node_id=svcmon.node_id").
-		SetJoin("services", "left join svcmon on nodes.node_id=svcmon.node_id left join services on svcmon.svc_id=services.svc_id")
+	tables["nodes"] = newTable("nodes").SetEntry(Node{})
 }
 
 var (
@@ -184,13 +180,12 @@ func getNodeByID(id string) (Node, error) {
 
 func getNodes(w http.ResponseWriter, r *http.Request) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
-	tx := tables["nodes"].DBTable()
+	req := tables["nodes"].Request()
 
 	if app, ok := claims["app"]; ok && app != "" {
-		tx = tx.Where("nodes.app = ?", app)
+		req.Where("nodes.app = ?", app)
 	}
-	//data := make([]Node, 0)
-	td, err := tables["nodes"].MakeResponse(r, tx, nil)
+	td, err := req.MakeResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}

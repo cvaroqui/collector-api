@@ -95,7 +95,7 @@ func dbOpen() (*gorm.DB, error) {
 
 func dbMigrate() error {
 	for _, t := range tables {
-		if err := t.DBMigrate(); err != nil {
+		if err := t.AutoMigrate(); err != nil {
 			return err
 		}
 	}

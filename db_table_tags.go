@@ -28,13 +28,7 @@ var (
 )
 
 func init() {
-	tables["tags"] = newTable("tags").
-		SetEntry(Tag{}).
-		SetJoin("node_tags", "left join node_tags on tags.tag_id=node_tags.tag_id").
-		SetJoin("nodes", "left join node_tags on tags.tag_id=node_tags.tag_id left join nodes on node_tags.node_id=nodes.node_id").
-		SetJoin("svc_tags", "left join svc_tags on tags.tag_id=svc_tags.tag_id").
-		SetJoin("svcmon", "left join svc_tags on tags.tag_id=svc_tags.tag_id left join svcmon on svc_tags.svc_id=svcmon.svc_id").
-		SetJoin("services", "left join svc_tags on tags.tag_id=svc_tags.tag_id left join services on svc_tags.svc_id=services.svc_id")
+	tables["tags"] = newTable("tags").SetEntry(Tag{})
 }
 
 func tagCtx(next http.Handler) http.Handler {
@@ -96,9 +90,8 @@ func getTagByID(id string) (Tag, error) {
 
 func getTags(w http.ResponseWriter, r *http.Request) {
 	//_, claims, _ := jwtauth.FromContext(r.Context())
-	tx := tables["tags"].DBTable()
-	data := make([]Tag, 0)
-	td, err := tables["tags"].MakeResponse(r, tx, &data)
+	req := tables["tags"].Request()
+	td, err := req.MakeResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
