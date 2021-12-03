@@ -62,13 +62,49 @@ func getNodeTagByID(id string) (NodeTag, error) {
 	return data[0], nil
 }
 
-func getNodeTags(w http.ResponseWriter, r *http.Request) {
+func getNodesTags(w http.ResponseWriter, r *http.Request) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
 	rq := tables["node_tags"].Request()
 	rq.AutoJoin("nodes")
 	if app, ok := claims["app"]; ok && app != "" {
 		rq.Where("nodes.app = ?", app)
 	}
+	td, err := rq.MakeResponse(r)
+	if err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+	}
+	if err := jsonEncode(w, td); err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+	}
+}
+
+func getNodeTags(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+	ctx := r.Context()
+	n, _ := ctx.Value("node").(Node)
+	rq := tables["node_tags"].Request()
+	rq.AutoJoin("nodes")
+	rq.Where("nodes.id = ?", n.ID)
+	if app, ok := claims["app"]; ok && app != "" {
+		rq.Where("nodes.app = ?", app)
+	}
+	td, err := rq.MakeResponse(r)
+	if err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+	}
+	if err := jsonEncode(w, td); err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+	}
+}
+
+func getNodeCandidateTags(w http.ResponseWriter, r *http.Request) {
+	//_, claims, _ := jwtauth.FromContext(r.Context())
+	ctx := r.Context()
+	n, _ := ctx.Value("node").(Node)
+	exclude := db.Table("node_tags").Where("node_id = ?", n.NodeID).Select("tag_id")
+
+	rq := tables["tags"].Request()
+	rq.Where("tags.tag_id NOT IN (?)", exclude)
 	td, err := rq.MakeResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
