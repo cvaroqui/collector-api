@@ -88,9 +88,11 @@ func router() http.Handler {
 		})
 		r.Route("/tags", func(r chi.Router) {
 			r.With(pager).Get("/", getTags)
+			r.Post("/", postTags)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(tagCtx)
 				r.Get("/", getTag)
+				r.Delete("/", delTag)
 				r.Route("/nodes", func(r chi.Router) {
 					r.With(pager).Get("/", getTagNodes)
 				})

@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Tag struct {
@@ -16,8 +19,8 @@ type Tag struct {
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	TagID      string         `gorm:"column:tag_id; size:40; index" json:"tag_id"`
-	TagName    string         `gorm:"->;column:tag_name; unique; size:128; type:GENERATED ALWAYS AS (sha(tag_name)) STORED" json:"tag_name"`
+	TagID      string         `gorm:"->;column:tag_id; size:40; index; type:GENERATED ALWAYS AS (sha(tag_name)) STORED" json:"tag_id"`
+	TagName    string         `gorm:"column:tag_name; unique; size:128" json:"tag_name"`
 	TagExclude string         `gorm:"column:tag_exclude; size:128" json:"tag_exclude"`
 	TagData    string         `gorm:"column:tag_data; type:text" json:"tag_data"`
 	TagCreated time.Time      `gorm:"column:tag_created; autoCreateTime" json:"tag_created"`
@@ -52,6 +55,18 @@ func tagCtx(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
+}
+
+func delTag(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tag, ok := ctx.Value("tag").(Tag)
+	if !ok {
+		http.Error(w, http.StatusText(422), 422)
+		return
+	}
+	// TODO: priv check
+	db.Where("tags.id = ?", tag.ID).Delete(&Tag{})
+	jsonEncode(w, []Tag{tag})
 }
 
 func getTag(w http.ResponseWriter, r *http.Request) {
@@ -97,5 +112,27 @@ func getTags(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := jsonEncode(w, td); err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
+	}
+}
+
+func postTags(w http.ResponseWriter, r *http.Request) {
+	tags := make([]Tag, 0)
+	tag := Tag{}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+	}
+	if err := json.Unmarshal(body, &tag); err == nil {
+		// single entry
+		tags = append(tags, tag)
+	} else if err := json.Unmarshal(body, &tags); err != nil {
+		// list of entry
+		http.Error(w, fmt.Sprint(err), 500)
+	}
+	for _, tag := range tags {
+		tx := db.Clauses(clause.OnConflict{UpdateAll: true})
+		if err := tx.Create(&tag).Error; err != nil {
+			http.Error(w, fmt.Sprint(err), 500)
+		}
 	}
 }
