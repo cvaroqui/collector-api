@@ -113,3 +113,26 @@ func getNodeCandidateTags(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
 }
+
+func getTagNodes(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+	ctx := r.Context()
+	tag, _ := ctx.Value("tag").(Tag)
+	fmt.Println("xx", tag)
+	rq := tables["nodes"].Request()
+	rq.AutoJoin("tags")
+	if app, ok := claims["app"]; ok && app != "" {
+		rq.Where("nodes.app = ?", app)
+	}
+	rq.Where("node_tags.tag_id = ?", tag.TagID)
+	if app, ok := claims["app"]; ok && app != "" {
+		rq.Where("nodes.app = ?", app)
+	}
+	td, err := rq.MakeResponse(r)
+	if err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+	}
+	if err := jsonEncode(w, td); err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+	}
+}
