@@ -118,7 +118,6 @@ func getTagNodes(w http.ResponseWriter, r *http.Request) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
 	ctx := r.Context()
 	tag, _ := ctx.Value("tag").(Tag)
-	fmt.Println("xx", tag)
 	rq := tables["nodes"].Request()
 	rq.AutoJoin("tags")
 	if app, ok := claims["app"]; ok && app != "" {

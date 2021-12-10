@@ -3,27 +3,25 @@ package main
 import (
 	"crypto/rsa"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/go-chi/render"
+	"github.com/spf13/viper"
 )
 
 var (
-	addr             string = ":8080"
 	tokenAuth        *jwtauth.JWTAuth
 	verifyBytes      []byte
 	verifyKey        *rsa.PublicKey
 	signKey          *rsa.PrivateKey
-	jwtSignKeyPath   string
-	jwtVerifyKeyPath string
+	jwtSignKeyFile   string
+	jwtVerifyKeyFile string
 )
 
 func fatal(err interface{}) {
@@ -33,15 +31,19 @@ func fatal(err interface{}) {
 }
 
 func main() {
+	if err := initConf(); err != nil {
+		fatal(err)
+	}
 	if err := initJWT(); err != nil {
+		fatal(err)
+	}
+	if err := initAuth(); err != nil {
 		fatal(err)
 	}
 	if err := initDB(); err != nil {
 		fatal(err)
 	}
-	if listen := os.Getenv("LISTEN"); listen != "" {
-		addr = listen
-	}
+	addr := viper.GetString("Listen")
 	log.Printf("Starting server on %v\n", addr)
 	if err := http.ListenAndServe(addr, router()); err != nil {
 		fatal(err)
@@ -57,19 +59,14 @@ func router() http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.URLFormat)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
-
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	// Protected routes
 	r.Group(func(r chi.Router) {
-		r.Use(jwtauth.Verifier(tokenAuth))
-		r.Use(jwtauth.Authenticator)
-
-		r.Get("/admin", func(w http.ResponseWriter, r *http.Request) {
-			_, claims, _ := jwtauth.FromContext(r.Context())
-			w.Write([]byte(fmt.Sprintf("protected area. hi %v", claims["user_id"])))
+		r.Use(authMiddleware)
+		r.Route("/auth/node/token", func(r chi.Router) {
+			r.Get("/", getNodeToken)
 		})
-
 		r.Route("/nodes", func(r chi.Router) {
 			r.With(pager).Get("/", getNodes)
 			r.Route("/{id}", func(r chi.Router) {
@@ -97,15 +94,6 @@ func router() http.Handler {
 					r.With(pager).Get("/", getTagNodes)
 				})
 			})
-		})
-	})
-
-	// NodeAuth routes
-	r.Group(func(r chi.Router) {
-		r.Use(nodeAuth(time.Minute * 30))
-
-		r.Route("/nodes/login", func(r chi.Router) {
-			r.Get("/", getNodeToken)
 		})
 	})
 

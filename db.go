@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -19,15 +20,15 @@ var (
 )
 
 func dbOpen() (*gorm.DB, error) {
-	// DB_SLOW_QUERY_THRESHOLD
-	slowQueryThresholdStr := os.Getenv("DB_SLOW_QUERY_THRESHOLD")
+	// API_DB_SLOW_QUERY_THRESHOLD
+	slowQueryThresholdStr := viper.GetString("db.log.slow_query_threshold")
 	slowQueryThreshold, err := time.ParseDuration(slowQueryThresholdStr)
 	if err != nil {
 		slowQueryThreshold = time.Second
 	}
 
-	// DB_LOG_LEVEL
-	logLvlStr := os.Getenv("DB_LOG_LEVEL")
+	// API_DB_LOG_LEVEL
+	logLvlStr := viper.GetString("db.log.level")
 	logLvl := logger.Silent
 	switch logLvlStr {
 	case "info":
@@ -38,30 +39,17 @@ func dbOpen() (*gorm.DB, error) {
 		logLvl = logger.Error
 	}
 
-	// DB_HOST
-	host := os.Getenv("DB_HOST")
-	if host == "" {
-		host = "127.0.0.1"
-	}
+	// API_DB_HOST, API_DB_PORT, API_DB_USERNAME
+	host := viper.GetString("db.host")
+	port := viper.GetString("db.port")
+	user := viper.GetString("db.username")
 
-	// DB_PORT
-	port := os.Getenv("DB_PORT")
-	if port == "" {
-		port = "3306"
-	}
-
-	// DB_USER
-	user := os.Getenv("DB_USER")
-	if user == "" {
-		user = "opensvc"
-	}
-
-	// DB_PASSWORD, DB_PASSWORD_FILE
-	pw := os.Getenv("DB_PASSWORD")
+	// API_DB_PASSWORD, API_DB_PASSWORD_FILE
+	pw := viper.GetString("db.password")
 	if pw == "" {
-		pwf := os.Getenv("DB_PASSWORD_FILE")
+		pwf := viper.GetString("db.password_file")
 		if pwf == "" {
-			return nil, fmt.Errorf("One of DB_PASSWORD or DB_PASSWORD_FILE env var is required")
+			return nil, fmt.Errorf("One of API_DB_PASSWORD or API_DB_PASSWORD_FILE env var is required")
 		}
 		b, err := ioutil.ReadFile(pwf)
 		if err != nil {

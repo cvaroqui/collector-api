@@ -4,31 +4,31 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
-	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth/v5"
+	"github.com/spf13/viper"
 )
 
 func initJWT() error {
-	jwtSignKeyPath = os.Getenv("JWT_SIGN_KEY")
-	jwtVerifyKeyPath = os.Getenv("JWT_VERIFY_KEY")
+	jwtSignKey := viper.GetString("jwt.sign_key")
+	jwtSignKeyFile = viper.GetString("jwt.sign_key_file")
+	jwtVerifyKeyFile = viper.GetString("jwt.verify_key_file")
 
-	if jwtSignKeyPath == "" && jwtVerifyKeyPath == "" {
-		return fmt.Errorf("JWT_SIGN_KEY must be to either a secret string, or the path of a RSA key. In the later case, JWT_VERIFY_KEY must also be set to the path of the RSA public key.")
-	} else if strings.HasPrefix(jwtSignKeyPath, "/") {
-		signBytes, err := ioutil.ReadFile(jwtSignKeyPath)
+	if jwtSignKeyFile == "" && jwtVerifyKeyFile == "" && jwtSignKey == "" {
+		return fmt.Errorf("API_JWT_SIGN_KEY or API_JWT_SIGN_KEY + API_JWT_VERIFY_KEY must be set.")
+	} else if jwtSignKeyFile != "" {
+		signBytes, err := ioutil.ReadFile(jwtSignKeyFile)
 		if err != nil {
 			return err
 		}
 		if signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes); err != nil {
 			return err
 		}
-		if jwtVerifyKeyPath == "" {
-			return fmt.Errorf("JWT_SIGN_KEY is set to the path of a RSA key. In this case, JWT_VERIFY_KEY must also be set to the path of the RSA public key.")
+		if jwtVerifyKeyFile == "" {
+			return fmt.Errorf("API_JWT_SIGN_KEY is set to the path of a RSA key. In this case, API_JWT_VERIFY_KEY must also be set to the path of the RSA public key.")
 		}
-		if verifyBytes, err = ioutil.ReadFile(jwtVerifyKeyPath); err != nil {
+		if verifyBytes, err = ioutil.ReadFile(jwtVerifyKeyFile); err != nil {
 			return err
 		} else {
 			log.Printf("Verify key:\n%s", string(verifyBytes))
@@ -41,7 +41,7 @@ func initJWT() error {
 		tokenAuth = jwtauth.New("RS256", signKey, verifyKey)
 	} else {
 		log.Printf("Using JWT HMAC signature. This is less secure than RS256 signature and verification. Set both JWT_SIGN_KEY and JWT_VERIFY_KEY to paths of a RSA key-pair.")
-		tokenAuth = jwtauth.New("HMAC", signKey, nil)
+		tokenAuth = jwtauth.New("HMAC", []byte(jwtSignKey), nil)
 	}
 	return nil
 }
