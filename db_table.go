@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
+	"github.com/shaj13/go-guardian/v2/auth"
 	"github.com/ssrathi/go-attr"
 	"gorm.io/gorm"
 )
@@ -64,14 +67,27 @@ var (
 		{From: "tags", To: "svc_tags", Cols: [][]string{{"tag_id", "tag_id"}}},
 		{From: "nodes", To: "node_tags", Cols: [][]string{{"node_id", "node_id"}}},
 		{From: "nodes", To: "svcmon", Cols: [][]string{{"node_id", "node_id"}}},
+		{From: "nodes", To: "apps", Cols: [][]string{{"app", "app"}}},
+		{From: "services", To: "apps", Cols: [][]string{{"svc_app", "app"}}},
 		{From: "services", To: "svcmon", Cols: [][]string{{"svc_id", "svc_id"}}},
 		{From: "services", To: "svc_tags", Cols: [][]string{{"svc_id", "svc_id"}}},
 		{From: "svcmon", To: "svc_tags", Cols: [][]string{{"svc_id", "svc_id"}}},
 		{From: "svcmon", To: "resmon", Cols: [][]string{{"node_id", "node_id"}, {"svc_id", "svc_id"}}},
+		{From: "auth_user", To: "auth_membership", Cols: [][]string{{"user_id", "user_id"}}},
+		{From: "auth_membership", To: "apps_publications", Cols: [][]string{{"group_id", "group_id"}}},
+		{From: "auth_membership", To: "apps_responsibles", Cols: [][]string{{"group_id", "group_id"}}},
+		{From: "apps", To: "apps_publications", Cols: [][]string{{"id", "app_id"}}},
+		{From: "apps", To: "apps_responsibles", Cols: [][]string{{"id", "app_id"}}},
 	}
 	tableRoutes = []tableRoute{
 		{From: "tags", To: "nodes", Via: []string{"node_tags"}},
 		{From: "tags", To: "services", Via: []string{"svc_tags"}},
+		{From: "nodes", To: "apps_publications", Via: []string{"apps"}},
+		{From: "nodes", To: "auth_membership", Via: []string{"apps", "apps_publications"}},
+		{From: "node_tags", To: "apps", Via: []string{"nodes", "apps", "apps_publications"}},
+		{From: "node_tags", To: "apps_publications", Via: []string{"nodes"}},
+		{From: "svc_tags", To: "apps", Via: []string{"services", "apps", "apps_publications"}},
+		{From: "svc_tags", To: "apps_publications", Via: []string{"services"}},
 	}
 )
 
@@ -307,6 +323,22 @@ func (t *request) withJoins(props propSlice) {
 	t.tx.Select(strings.Join(selects, ","))
 }
 
+func (t *request) withACL(user auth.Info) {
+	if _, err := strconv.Atoi(user.GetID()); err != nil {
+		// node
+		t.AutoJoin("apps")
+		t.AutoJoin("nodes")
+		t.Where("apps.app = nodes.app")
+		t.Where("nodes.node_id = ?", user.GetID())
+	} else {
+		t.AutoJoin("apps_publications")
+		t.AutoJoin("auth_membership")
+		t.Where("apps_publications.group_id = auth_membership.group_id")
+		t.Where("auth_membership.user_id = ?", user.GetID())
+		// user
+	}
+}
+
 // getHops returns
 //  []string{"svc_tags", "tags"} as the "svc to tags" route
 //  []string{"tags"} as the "svc_tags to tags" route
@@ -337,6 +369,7 @@ func (t *request) AutoJoin(table string) {
 	for _, there := range getHops(t.table.name, table) {
 		j, ok := findJoin(here, there)
 		if !ok {
+			log.Printf("missing autojoin from %s to %s", here, there)
 			return
 		}
 		if t.joined.Has(j) {
@@ -371,6 +404,9 @@ func (t *request) withOrders(orders propSlice) {
 
 func (t *request) MakeResponse(r *http.Request) (*tableResponse, error) {
 	var total int64
+
+	user := auth.User(r)
+	t.withACL(user)
 
 	// props selection
 	props := t.table.queryProps(r)
