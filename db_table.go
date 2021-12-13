@@ -82,16 +82,20 @@ var (
 	tableRoutes = []tableRoute{
 		{From: "tags", To: "nodes", Via: []string{"node_tags"}},
 		{From: "tags", To: "services", Via: []string{"svc_tags"}},
+		{From: "tags", To: "apps_publications", Via: []string{"svc_tags", "services", "apps"}},
+		{From: "tags", To: "auth_membership", Via: []string{"svc_tags", "services", "apps", "apps_publications"}},
 		{From: "nodes", To: "apps_publications", Via: []string{"apps"}},
 		{From: "nodes", To: "auth_membership", Via: []string{"apps", "apps_publications"}},
-		{From: "node_tags", To: "apps", Via: []string{"nodes", "apps", "apps_publications"}},
+		{From: "node_tags", To: "apps", Via: []string{"nodes"}},
 		{From: "node_tags", To: "apps_publications", Via: []string{"nodes", "apps"}},
+		{From: "node_tags", To: "auth_membership", Via: []string{"nodes", "apps", "apps_publications"}},
 		{From: "services", To: "nodes", Via: []string{"svcmon"}},
 		{From: "services", To: "apps_publications", Via: []string{"apps"}},
 		{From: "services", To: "apps_responsibles", Via: []string{"apps"}},
 		{From: "services", To: "auth_membership", Via: []string{"apps", "apps_publications"}},
-		{From: "svc_tags", To: "apps", Via: []string{"services", "apps", "apps_publications"}},
-		{From: "svc_tags", To: "apps_publications", Via: []string{"services"}},
+		{From: "svc_tags", To: "apps", Via: []string{"services"}},
+		{From: "svc_tags", To: "apps_publications", Via: []string{"services", "apps"}},
+		{From: "svc_tags", To: "auth_membership", Via: []string{"services", "apps", "apps_publications"}},
 	}
 )
 

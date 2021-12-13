@@ -91,18 +91,16 @@ func router() http.Handler {
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(serviceCtx)
 				r.Get("/", getService)
-				//r.With(pager).Get("/candidate_tags", getServiceCandidateTags)
-				//r.With(pager).Get("/tags", getServiceTags)
+				r.With(pager).Get("/candidate_tags", getServiceCandidateTags)
+				r.With(pager).Get("/tags", getServiceTags)
 			})
-			/*
-				r.Route("/tags", func(r chi.Router) {
-					r.With(pager).Get("/", getServicesTags)
-					r.Route("/{id}", func(r chi.Router) {
-						r.Use(serviceTagCtx)
-						r.Get("/", getServiceTag)
-					})
+			r.Route("/tags", func(r chi.Router) {
+				r.With(pager).Get("/", getServicesTags)
+				r.Route("/{id}", func(r chi.Router) {
+					r.Use(serviceTagCtx)
+					r.Get("/", getServiceTag)
 				})
-			*/
+			})
 		})
 		r.Route("/tags", func(r chi.Router) {
 			r.With(pager).Get("/", getTags)
@@ -113,6 +111,9 @@ func router() http.Handler {
 				r.Delete("/", delTag)
 				r.Route("/nodes", func(r chi.Router) {
 					r.With(pager).Get("/", getTagNodes)
+				})
+				r.Route("/services", func(r chi.Router) {
+					r.With(pager).Get("/", getTagServices)
 				})
 			})
 		})
