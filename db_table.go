@@ -85,7 +85,11 @@ var (
 		{From: "nodes", To: "apps_publications", Via: []string{"apps"}},
 		{From: "nodes", To: "auth_membership", Via: []string{"apps", "apps_publications"}},
 		{From: "node_tags", To: "apps", Via: []string{"nodes", "apps", "apps_publications"}},
-		{From: "node_tags", To: "apps_publications", Via: []string{"nodes"}},
+		{From: "node_tags", To: "apps_publications", Via: []string{"nodes", "apps"}},
+		{From: "services", To: "nodes", Via: []string{"svcmon"}},
+		{From: "services", To: "apps_publications", Via: []string{"apps"}},
+		{From: "services", To: "apps_responsibles", Via: []string{"apps"}},
+		{From: "services", To: "auth_membership", Via: []string{"apps", "apps_publications"}},
 		{From: "svc_tags", To: "apps", Via: []string{"services", "apps", "apps_publications"}},
 		{From: "svc_tags", To: "apps_publications", Via: []string{"services"}},
 	}

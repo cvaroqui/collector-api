@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth/v5"
 	"gorm.io/gorm"
 )
 
@@ -179,12 +178,7 @@ func getNodeByID(id string) (Node, error) {
 }
 
 func getNodes(w http.ResponseWriter, r *http.Request) {
-	_, claims, _ := jwtauth.FromContext(r.Context())
 	req := tables["nodes"].Request()
-
-	if app, ok := claims["app"]; ok && app != "" {
-		req.Where("nodes.app = ?", app)
-	}
 	td, err := req.MakeResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
