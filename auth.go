@@ -39,8 +39,8 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		log.Printf("User %s (%s) authenticated\n", user.GetUserName(), user.GetID())
-		ctx := context.WithValue(r.Context(), "user", user)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		r = auth.RequestWithUser(user, r)
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -69,6 +69,9 @@ func validateUser(ctx context.Context, r *http.Request, username, password strin
 	if err != nil {
 		return nil, err
 	}
+	if user.ID == 0 {
+		return nil, fmt.Errorf("user id zero")
+	}
 	if ok, err := w2pCryptObj.IsEqual(password, user.Password); err != nil {
 		return nil, fmt.Errorf("user auth: %s", err)
 	} else if ok {
@@ -94,14 +97,17 @@ func initLDAP() []auth.Strategy {
 		return strategies
 	}
 	for k, _ := range data.AllSettings() {
-		log.Println(" - ", k)
 		prefix := fmt.Sprintf("auth.ldap.%s.", k)
+		host := viper.GetString(prefix + "host")
+		port := viper.GetString(prefix + "port")
+		baseDN := viper.GetString(prefix + "base_dn")
+		log.Printf("  %s %s:%s %s", k, host, port, baseDN)
 		tlsCfg := tls.Config{}
 		cfg := &ldap.Config{
-			BaseDN:       viper.GetString(prefix + "base_dn"),
+			BaseDN:       baseDN,
 			BindDN:       viper.GetString(prefix + "bind_dn"),
-			Port:         viper.GetString(prefix + "port"),
-			Host:         viper.GetString(prefix + "host"),
+			Port:         port,
+			Host:         host,
 			BindPassword: viper.GetString(prefix + "bind_password"),
 			Filter:       viper.GetString(prefix + "filter"),
 			TLS:          &tlsCfg,
@@ -113,14 +119,21 @@ func initLDAP() []auth.Strategy {
 }
 
 func initBasicNode() []auth.Strategy {
-	log.Println("init basic auth strategy")
+	log.Println("init basic node auth strategy")
 	basicNodeStrategy := basic.NewCached(validateNode, cache)
 	return []auth.Strategy{basicNodeStrategy}
 }
 
 func initBasicUser() []auth.Strategy {
-	hmacKey := viper.GetString("auth.web2py.hmac.key")
+	log.Println("init basic user auth strategy")
 	hmacAlg := viper.GetString("auth.web2py.hmac.alg")
+	if hmacAlg != "" {
+		log.Println("  using hmac algo:", hmacAlg)
+	}
+	hmacKey := viper.GetString("auth.web2py.hmac.key")
+	if hmacKey != "" {
+		log.Println("  using hmac key")
+	}
 	basicUserStrategy := basic.NewCached(validateUser, cache)
 	w2pCryptObj = w2pcrypt.NewCrypt(hmacKey, hmacAlg)
 	return []auth.Strategy{basicUserStrategy}

@@ -67,6 +67,9 @@ func router() http.Handler {
 		r.Route("/auth/node/token", func(r chi.Router) {
 			r.Get("/", getNodeToken)
 		})
+		r.Route("/auth/user/token", func(r chi.Router) {
+			r.Get("/", getUserToken)
+		})
 		r.Route("/nodes", func(r chi.Router) {
 			r.With(pager).Get("/", getNodes)
 			r.Route("/{id}", func(r chi.Router) {

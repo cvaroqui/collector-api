@@ -8,9 +8,11 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/ssh"
 )
 
 func initJWT() error {
+	log.Println("init token factory")
 	jwtSignKey := viper.GetString("jwt.sign_key")
 	jwtSignKeyFile = viper.GetString("jwt.sign_key_file")
 	jwtVerifyKeyFile = viper.GetString("jwt.verify_key_file")
@@ -30,15 +32,18 @@ func initJWT() error {
 		}
 		if verifyBytes, err = ioutil.ReadFile(jwtVerifyKeyFile); err != nil {
 			return err
-		} else {
-			log.Printf("Verify key:\n%s", string(verifyBytes))
 		}
-
 		if verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes); err != nil {
 			return err
+		} else {
+			if pk, err := ssh.NewPublicKey(verifyKey); err != nil {
+				log.Printf("  load verify key: %s", err)
+			} else {
+				finger := ssh.FingerprintLegacyMD5(pk)
+				log.Printf("  verify key sig: %s", finger)
+			}
+			tokenAuth = jwtauth.New("RS256", signKey, verifyKey)
 		}
-
-		tokenAuth = jwtauth.New("RS256", signKey, verifyKey)
 	} else {
 		log.Printf("Using JWT HMAC signature. This is less secure than RS256 signature and verification. Set both JWT_SIGN_KEY and JWT_VERIFY_KEY to paths of a RSA key-pair.")
 		tokenAuth = jwtauth.New("HMAC", []byte(jwtSignKey), nil)

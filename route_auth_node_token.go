@@ -10,9 +10,8 @@ import (
 )
 
 func getNodeToken(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
 	exp := time.Minute * 10
-	user, _ := ctx.Value("user").(auth.Info)
+	user := auth.User(r)
 	n, _ := getNodeByNodeID(user.GetID())
 	expireAt := time.Now().Add(exp)
 	claims := map[string]interface{}{
