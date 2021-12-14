@@ -19,6 +19,7 @@ import (
 	"github.com/shaj13/go-guardian/v2/auth/strategies/token"
 	"github.com/shaj13/go-guardian/v2/auth/strategies/union"
 
+	"github.com/opensvc/collector-api/apiuser"
 	"github.com/opensvc/collector-api/w2pcrypt"
 )
 
@@ -75,22 +76,10 @@ func validateUser(ctx context.Context, r *http.Request, username, password strin
 	if ok, err := w2pCryptObj.IsEqual(password, user.Password); err != nil {
 		return nil, fmt.Errorf("user auth: %s", err)
 	} else if ok {
-		extensions := userExtensions(user.ID)
+		extensions := apiuser.MakeExtensions(db, user.ID)
 		return auth.NewDefaultUser(username, fmt.Sprint(user.ID), nil, extensions), nil
 	}
 	return nil, fmt.Errorf("user auth: invalid credentials")
-}
-
-func userExtensions(id uint) auth.Extensions {
-	ext := make(auth.Extensions)
-	ext["privileges"] = userPrileges(id)
-	return ext
-}
-
-func userPrileges(id uint) []string {
-	var roles []string
-	db.Table("auth_group").Joins("JOIN auth_membership ON `auth_group`.`id` = `auth_membership`.`group_id`").Joins("JOIN auth_user ON `auth_membership`.`user_id` = `auth_user`.`id`").Where("`auth_group`.`privilege` = ? AND `auth_user`.`id` = ?", "T", id).Pluck("role", &roles)
-	return roles
 }
 
 func initCache() error {

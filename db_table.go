@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/opensvc/collector-api/apiuser"
 	"github.com/shaj13/go-guardian/v2/auth"
 	"github.com/ssrathi/go-attr"
 	"gorm.io/gorm"
@@ -332,6 +333,10 @@ func (t *request) withJoins(props propSlice) {
 }
 
 func (t *request) withACL(user auth.Info) {
+	if apiuser.IsManager(user) {
+		fmt.Println("manager", user)
+		return
+	}
 	if _, err := strconv.Atoi(user.GetID()); err != nil {
 		// node
 		t.AutoJoin("apps")

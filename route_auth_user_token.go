@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/opensvc/collector-api/apiuser"
 	"github.com/shaj13/go-guardian/v2/auth"
 )
 
@@ -14,7 +15,7 @@ func getUserToken(w http.ResponseWriter, r *http.Request) {
 	exp := time.Minute * 10
 	user := auth.User(r)
 	expireAt := time.Now().Add(exp)
-	privileges := strings.Join(user.GetExtensions().Values("privileges"), ",")
+	privileges := strings.Join(apiuser.Privileges(user), ",")
 	claims := map[string]interface{}{
 		"exp":        expireAt.Unix(),
 		"authorized": true,
