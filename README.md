@@ -4,9 +4,17 @@ Install go 1.17
 	curl https://go.dev/dl/go1.17.3.linux-amd64.tar.gz
 	tar -C /usr/local -xzf go1.17.3.linux-amd64.tar.gz
 
+Install swaggo and swag command
+===============================
+
+	CGO_ENABLED=0 /usr/local/go/bin/go get -u github.com/swaggo/http-swagger
+	CGO_ENABLED=0 /usr/local/go/bin/go get -u github.com/alecthomas/template
+	CGO_ENABLED=0 /usr/local/go/bin/go get -u github.com/swaggo/swag/cmd/swag
+
 Build for alpine container
 ==========================
 
+	~/go/bin/swag init
 	CGO_ENABLED=0 /usr/local/go/bin/go build
 
 Testing

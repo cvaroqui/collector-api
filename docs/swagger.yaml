@@ -1,0 +1,115 @@
+basePath: /
+definitions:
+  main.TableResponse:
+    properties:
+      data:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      meta:
+        $ref: '#/definitions/main.tableResponseMeta'
+    type: object
+  main.property:
+    properties:
+      desc:
+        type: boolean
+      name:
+        type: string
+      remap:
+        type: string
+      table:
+        type: string
+    type: object
+  main.tableResponseMeta:
+    properties:
+      available_props:
+        items:
+          $ref: '#/definitions/main.property'
+        type: array
+      count:
+        type: integer
+      included_props:
+        items:
+          $ref: '#/definitions/main.property'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+info:
+  contact:
+    email: collector-api-contact@opensvc.com
+    name: OpenSVC SAS
+    url: https://www.opensvc.com
+  description: Organization clusters, nodes, services and more.
+  license:
+    name: Apache License 2.0
+  title: OpenSVC collector API
+  version: "1.0"
+paths:
+  /nodes:
+    get:
+      consumes:
+      - application/json
+      description: List nodes
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a&b:a AND b, a|b:a OR b, (a,b):IN (a,b),
+          !a:NOT a, %a:LIKE a%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.TableResponse'
+        "500":
+          description: ok
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List nodes
+      tags:
+      - nodes
+securityDefinitions:
+  BasicAuth:
+    type: basic
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

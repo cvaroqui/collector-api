@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/opensvc/collector-api/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
+
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
@@ -30,6 +33,21 @@ func fatal(err interface{}) {
 	}
 }
 
+//
+// @title OpenSVC collector API
+// @version 1.0
+// @description Organization clusters, nodes, services and more.
+// @contact.name OpenSVC SAS
+// @contact.url https://www.opensvc.com
+// @contact.email collector-api-contact@opensvc.com
+// @license.name Apache License 2.0
+// @license.url	https://www.apache.org/licenses/LICENSE-2.0
+// @BasePath /
+// @securityDefinitions.basic BasicAuth
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+//
 func main() {
 	if err := initConf(); err != nil {
 		fatal(err)
@@ -57,9 +75,9 @@ func router() http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.URLFormat)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(middleware.Timeout(60 * time.Second))
+	r.Mount("/swagger", httpSwagger.WrapHandler)
 
 	// Protected routes
 	r.Group(func(r chi.Router) {

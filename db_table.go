@@ -31,7 +31,7 @@ type (
 		entry   interface{}
 		propMap propMapping
 	}
-	tableResponse struct {
+	TableResponse struct {
 		Data tableResponseData  `json:"data"`
 		Meta *tableResponseMeta `json:"meta,omitempty"`
 	}
@@ -415,7 +415,7 @@ func (t *request) withOrders(orders propSlice) {
 	t.tx = t.tx.Order(strings.Join(sqlOrders, ","))
 }
 
-func (t *request) MakeResponse(r *http.Request) (*tableResponse, error) {
+func (t *request) MakeResponse(r *http.Request) (*TableResponse, error) {
 	var total int64
 
 	user := auth.User(r)
@@ -450,7 +450,7 @@ func (t *request) MakeResponse(r *http.Request) (*tableResponse, error) {
 		return nil, err
 	}
 
-	td := &tableResponse{}
+	td := &TableResponse{}
 	td.Data = data
 	//td.Data = t.remap(data, props)
 	if queryMeta(r) {

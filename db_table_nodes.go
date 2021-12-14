@@ -176,14 +176,3 @@ func getNodeByID(id string) (Node, error) {
 	}
 	return data[0], nil
 }
-
-func getNodes(w http.ResponseWriter, r *http.Request) {
-	req := tables["nodes"].Request()
-	td, err := req.MakeResponse(r)
-	if err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-	if err := jsonEncode(w, td); err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-}
