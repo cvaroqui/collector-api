@@ -15,7 +15,7 @@ import (
 // @Accept       json
 // @Produce      json
 // @Success      200      {object}  TableResponse
-// @Failure      500      {string}  string    "ok"
+// @Failure      500      {string}  string    "Internal Server Error"
 // @Param        props    query     string    false  "properties to include, and optionally remap (comma separated)"
 // @Param        groupby  query     string    false  "properties to group by (comma separated)"
 // @Param        order    query     string    false  "properties to order by (comma separated, prefix with '~' to reverse)"

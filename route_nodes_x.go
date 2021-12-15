@@ -12,8 +12,8 @@ import "net/http"
 // @Accept       json
 // @Produce      json
 // @Success      200  {array}   Node
-// @Failure      404  {string}  string  "not found"
-// @Failure      500  {string}  string  "internal server error"
+// @Failure      404  {string}  string  "Not Found"
+// @Failure      500  {string}  string  "Internal Server Error"
 // @Param        id   path      string  true  "the index of the entry in database, or uuid, or name"
 // @Router       /nodes/{id}  [get]
 //
