@@ -90,6 +90,7 @@ func router() http.Handler {
 		})
 		r.Route("/nodes", func(r chi.Router) {
 			r.With(pager).Get("/", getNodes)
+			r.Post("/", postNodes)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(nodeCtx)
 				r.Get("/", getNode)

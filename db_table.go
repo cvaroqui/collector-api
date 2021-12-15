@@ -334,7 +334,6 @@ func (t *request) withJoins(props propSlice) {
 
 func (t *request) withACL(user auth.Info) {
 	if apiuser.IsManager(user) {
-		fmt.Println("manager", user)
 		return
 	}
 	if _, err := strconv.Atoi(user.GetID()); err != nil {

@@ -61,7 +61,7 @@
                         "items": {
                             "type": "string"
                         },
-                        "description": "property value filter (a\u0026b:a AND b, a|b:a OR b, (a,b):IN  (a,b),  !a:NOT  a,  %a:LIKE  a%)",
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
                         "name": "filters",
                         "in": "query"
                     },
@@ -92,7 +92,59 @@
                         }
                     },
                     "500": {
-                        "description": "ok",
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "The app code of the nodes is forced to one the user is responsible of.\nThe team responsible of the nodes defaults to the user's primary group.\nThe user must be in the NodeManager privilege group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "nodes"
+                ],
+                "summary": "Create or update nodes",
+                "parameters": [
+                    {
+                        "description": "list of nodes to create or update",
+                        "name": "nodes",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/main.Node"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/main.Node"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "string"
                         }
@@ -141,13 +193,13 @@
                         }
                     },
                     "404": {
-                        "description": "not found",
+                        "description": "Not Found",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "500": {
-                        "description": "internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "string"
                         }

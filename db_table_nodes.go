@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
 
@@ -16,7 +17,7 @@ type Node struct {
 	CreatedAt           time.Time      `json:"created_at"`
 	UpdatedAt           time.Time      `json:"updated_at"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	Nodename            string         `gorm:"column:nodename; index" json:"nodename"`
+	Nodename            string         `gorm:"column:nodename; index; index:ns,unique" json:"nodename"`
 	NodeID              string         `gorm:"column:node_id; uniqueIndex; size:36" json:"node_id"`
 	ClusterID           string         `gorm:"column:cluster_id; size:36; index" json:"cluster_id"`
 	WarrantyEnd         time.Time      `gorm:"column:warranty_end; autoCreateTime" json:"warranty_end"`
@@ -51,7 +52,7 @@ type Node struct {
 	TeamResponsible     string         `gorm:"column:team_responsible; index" json:"team_responsible"`
 	TeamInteg           string         `gorm:"column:team_integ" json:"team_integ"`
 	TeamSupport         string         `gorm:"column:team_support" json:"team_support"`
-	App                 string         `gorm:"column:app" json:"app"`
+	App                 string         `gorm:"column:app; index:ns,unique" json:"app"`
 	Serial              string         `gorm:"column:serial" json:"serial"`
 	SPVersion           string         `gorm:"column:sp_version" json:"sp_version"`
 	BIOSVersion         string         `gorm:"column:bios_version" json:"bios_version"`
@@ -89,6 +90,13 @@ type Node struct {
 	Notifications       bool           `gorm:"column:notifications; default:true" json:"notifications"`
 	SnoozeTill          time.Time      `gorm:"column:snooze_till" json:"snooze_till"`
 	NodeFrozen          bool           `gorm:"column:node_frozen" json:"node_frozen"`
+}
+
+func (t *Node) BeforeCreate(tx *gorm.DB) error {
+	if t.NodeID == "" {
+		t.NodeID = uuid.NewV4().String()
+	}
+	return nil
 }
 
 func init() {

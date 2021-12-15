@@ -7,7 +7,7 @@ Install go 1.17
 Install swaggo and swag command
 ===============================
 
-	CGO_ENABLED=0 /usr/local/go/bin/go get -u github.com/swaggo/http-swagger
+	/usr/local/go/bin/go get -u github.com/swaggo/http-swagger
 	CGO_ENABLED=0 /usr/local/go/bin/go get -u github.com/alecthomas/template
 	CGO_ENABLED=0 /usr/local/go/bin/go get -u github.com/swaggo/swag/cmd/swag
 	~/go/bin/swag init --parseDependency --parseInternal --parseDepth 1
@@ -15,7 +15,9 @@ Install swaggo and swag command
 Build for alpine container
 ==========================
 
-	CGO_ENABLED=0 /usr/local/go/bin/go build
+	export CGO_ENABLED=0                 # if building for alpine
+	export PATH=/usr/local/bin/go:$PATH  # if go is installed there
+	go build
 
 Testing
 =======
