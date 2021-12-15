@@ -34,19 +34,19 @@ func fatal(err interface{}) {
 }
 
 //
-// @title OpenSVC collector API
-// @version 1.0
-// @description Organization clusters, nodes, services and more.
-// @contact.name OpenSVC SAS
-// @contact.url https://www.opensvc.com
-// @contact.email collector-api-contact@opensvc.com
-// @license.name Apache License 2.0
-// @license.url	https://www.apache.org/licenses/LICENSE-2.0
-// @BasePath /
-// @securityDefinitions.basic BasicAuth
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
+// @title                       OpenSVC collector API
+// @version                     1.0
+// @description                 Organization clusters, nodes, services and more.
+// @contact.name                OpenSVC SAS
+// @contact.url                 https://www.opensvc.com
+// @contact.email               collector-api-contact@opensvc.com
+// @license.name                Apache License 2.0
+// @license.url                 https://www.apache.org/licenses/LICENSE-2.0
+// @BasePath                    /
+// @securityDefinitions.basic   BasicAuth
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
 //
 func main() {
 	if err := initConf(); err != nil {

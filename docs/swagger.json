@@ -9,7 +9,8 @@
             "email": "collector-api-contact@opensvc.com"
         },
         "license": {
-            "name": "Apache License 2.0"
+            "name": "Apache License 2.0",
+            "url": "https://www.apache.org/licenses/LICENSE-2.0"
         },
         "version": "1.0"
     },
@@ -60,7 +61,7 @@
                         "items": {
                             "type": "string"
                         },
-                        "description": "property value filter (a\u0026b:a AND b, a|b:a OR b, (a,b):IN (a,b), !a:NOT a, %a:LIKE a%)",
+                        "description": "property value filter (a\u0026b:a AND b, a|b:a OR b, (a,b):IN  (a,b),  !a:NOT  a,  %a:LIKE  a%)",
                         "name": "filters",
                         "in": "query"
                     },
@@ -98,9 +99,312 @@
                     }
                 }
             }
+        },
+        "/nodes/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Show a node by index, id or name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "nodes"
+                ],
+                "summary": "Show a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or uuid, or name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/main.Node"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "gorm.DeletedAt": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "string"
+                },
+                "valid": {
+                    "description": "Valid is true if Time is not NULL",
+                    "type": "boolean"
+                }
+            }
+        },
+        "main.Node": {
+            "type": "object",
+            "properties": {
+                "action_type": {
+                    "type": "string"
+                },
+                "app": {
+                    "type": "string"
+                },
+                "asset_env": {
+                    "type": "string"
+                },
+                "assetname": {
+                    "type": "string"
+                },
+                "bios_version": {
+                    "type": "string"
+                },
+                "cluster_id": {
+                    "type": "string"
+                },
+                "collector": {
+                    "type": "string"
+                },
+                "connect_to": {
+                    "type": "string"
+                },
+                "cpu_cores": {
+                    "type": "integer"
+                },
+                "cpu_dies": {
+                    "type": "integer"
+                },
+                "cpu_freq": {
+                    "type": "integer"
+                },
+                "cpu_model": {
+                    "type": "string"
+                },
+                "cpu_threads": {
+                    "type": "integer"
+                },
+                "cpu_vendor": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "enclosure": {
+                    "type": "string"
+                },
+                "enclosureslot": {
+                    "type": "string"
+                },
+                "fqdn": {
+                    "type": "string"
+                },
+                "hv": {
+                    "type": "string"
+                },
+                "hvpool": {
+                    "type": "string"
+                },
+                "hvvdc": {
+                    "type": "string"
+                },
+                "hw_obs_alert_date": {
+                    "type": "string"
+                },
+                "hw_obs_warn_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_boot": {
+                    "type": "string"
+                },
+                "last_comm": {
+                    "type": "string"
+                },
+                "listener_port": {
+                    "type": "integer"
+                },
+                "loc_addr": {
+                    "type": "string"
+                },
+                "loc_building": {
+                    "type": "string"
+                },
+                "loc_city": {
+                    "type": "string"
+                },
+                "loc_country": {
+                    "type": "string"
+                },
+                "loc_floor": {
+                    "type": "string"
+                },
+                "loc_rack": {
+                    "type": "string"
+                },
+                "loc_room": {
+                    "type": "string"
+                },
+                "loc_zip": {
+                    "type": "string"
+                },
+                "maintenance_end": {
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "type": "string"
+                },
+                "mem_banks": {
+                    "type": "integer"
+                },
+                "mem_bytes": {
+                    "type": "integer"
+                },
+                "mem_slots": {
+                    "type": "integer"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "node_env": {
+                    "type": "string"
+                },
+                "node_frozen": {
+                    "type": "boolean"
+                },
+                "node_id": {
+                    "type": "string"
+                },
+                "nodename": {
+                    "type": "string"
+                },
+                "notifications": {
+                    "type": "boolean"
+                },
+                "os_arch": {
+                    "type": "string"
+                },
+                "os_concat": {
+                    "type": "string"
+                },
+                "os_kernel": {
+                    "type": "string"
+                },
+                "os_name": {
+                    "type": "string"
+                },
+                "os_obs_alert_date": {
+                    "type": "string"
+                },
+                "os_obs_warn_date": {
+                    "type": "string"
+                },
+                "os_release": {
+                    "type": "string"
+                },
+                "os_vendor": {
+                    "type": "string"
+                },
+                "power_breaker1": {
+                    "type": "string"
+                },
+                "power_breaker2": {
+                    "type": "string"
+                },
+                "power_cabinet1": {
+                    "type": "string"
+                },
+                "power_cabinet2": {
+                    "type": "string"
+                },
+                "power_protect": {
+                    "type": "string"
+                },
+                "power_protect_breaker": {
+                    "type": "string"
+                },
+                "power_supply_nb": {
+                    "type": "integer"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "sec_zone": {
+                    "type": "string"
+                },
+                "serial": {
+                    "type": "string"
+                },
+                "snooze_till": {
+                    "type": "string"
+                },
+                "sp_version": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "team_integ": {
+                    "type": "string"
+                },
+                "team_responsible": {
+                    "type": "string"
+                },
+                "team_support": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "tz": {
+                    "type": "string"
+                },
+                "updated": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "warranty_end": {
+                    "type": "string"
+                }
+            }
+        },
         "main.TableResponse": {
             "type": "object",
             "properties": {

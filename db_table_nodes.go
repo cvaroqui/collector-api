@@ -131,16 +131,6 @@ func nodeCtx(next http.Handler) http.Handler {
 	})
 }
 
-func getNode(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	n, ok := ctx.Value("node").(Node)
-	if !ok {
-		http.Error(w, http.StatusText(422), 422)
-		return
-	}
-	jsonEncode(w, []Node{n})
-}
-
 func getNodeByNodeID(nodeID string) (Node, error) {
 	data := make([]Node, 0)
 	result := db.Where("node_id = ?", nodeID).Find(&data)
