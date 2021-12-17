@@ -1,4 +1,4 @@
-package main
+package routes
 
 import (
 	"encoding/json"
@@ -7,7 +7,10 @@ import (
 	"net/http"
 
 	"github.com/opensvc/collector-api/apiuser"
-	"github.com/shaj13/go-guardian/v2/auth"
+	"github.com/opensvc/collector-api/auth"
+	"github.com/opensvc/collector-api/authuser"
+	"github.com/opensvc/collector-api/db"
+	"github.com/opensvc/collector-api/db/tables"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -21,7 +24,7 @@ import (
 // @Tags         nodes
 // @Accept       json
 // @Produce      json
-// @Success      200      {object}  TableResponse
+// @Success      200      {object}  db.TableResponse
 // @Failure      500    {string}  string  "Internal Server Error"
 // @Param        props    query     string    false  "properties to include, and optionally remap (comma separated)"
 // @Param        groupby  query     string    false  "properties to group by (comma separated)"
@@ -32,8 +35,8 @@ import (
 // @Param        meta     query     bool      false  "turn off metadata in response"
 // @Router       /nodes  [get]
 //
-func getNodes(w http.ResponseWriter, r *http.Request) {
-	rq := tables["nodes"].Request()
+func GetNodes(w http.ResponseWriter, r *http.Request) {
+	rq := db.Tab("nodes").Request()
 	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
@@ -59,14 +62,14 @@ func getNodes(w http.ResponseWriter, r *http.Request) {
 // @Failure      500      {string}  string    "Internal Server Error"
 // @Router       /nodes  [post]
 //
-func postNodes(w http.ResponseWriter, r *http.Request) {
+func PostNodes(w http.ResponseWriter, r *http.Request) {
 	user := auth.User(r)
-	if !apiuser.HasPrivilege(user, "NodeManager") {
-		apiuser.PrivError(w, "NodeManager")
+	if !authuser.HasPrivilege(user, "NodeManager") {
+		authuser.PrivError(w, "NodeManager")
 		return
 	}
-	nodes := make([]Node, 0)
-	node := Node{}
+	nodes := make([]tables.Node, 0)
+	node := tables.Node{}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("read request body: %s", err), 500)
@@ -80,16 +83,16 @@ func postNodes(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unmarshal json: %s", err), 500)
 		return
 	}
-	userPrimaryGroup := apiuser.PrimaryGroup(db, user)
-	userDefaultApp := apiuser.DefaultApp(db, user)
+	userPrimaryGroup := apiuser.PrimaryGroup(user)
+	userDefaultApp := apiuser.DefaultApp(user)
 	var myNodes *gorm.DB
-	if !apiuser.HasPrivilege(user, "Manager") {
-		myNodes = db.
+	if !authuser.HasPrivilege(user, "Manager") {
+		myNodes = db.DB().
 			Joins("JOIN apps ON apps.app = nodes.app").
 			Joins("JOIN apps_responsibles ON apps_responsibles.app_id = apps.id").
 			Joins("JOIN auth_membership ON auth_membership.group_id = apps_responsibles.group_id AND auth_membership.user_id = ?", user.GetID()).
 			Select("nodes.id")
-		temp := []Node{}
+		temp := []tables.Node{}
 		if err := myNodes.Find(&temp).Error; err != nil {
 			http.Error(w, fmt.Sprintf("nodes under user responsabilty: %s", err), 500)
 			return
@@ -97,11 +100,11 @@ func postNodes(w http.ResponseWriter, r *http.Request) {
 	}
 	for i, n := range nodes {
 		if n.ID != 0 {
-			db.Where("id = ?", n.ID).Take(&n)
+			db.DB().Where("id = ?", n.ID).Take(&n)
 		} else if n.NodeID != "" {
-			db.Where("node_id = ?", n.NodeID).Take(&n)
+			db.DB().Where("node_id = ?", n.NodeID).Take(&n)
 		} else if n.Nodename != "" && n.App != "" {
-			db.Where("nodename = ? AND app = ?", n.Nodename, n.App).Take(&n)
+			db.DB().Where("nodename = ? AND app = ?", n.Nodename, n.App).Take(&n)
 		}
 		if n.ID == 0 {
 			// new entry ... populate required field we have defaults for
@@ -116,7 +119,7 @@ func postNodes(w http.ResponseWriter, r *http.Request) {
 
 				// new chance to find an existing node
 				if n.Nodename != "" && n.App != "" {
-					db.Where("nodename = ? AND app = ?", n.Nodename, n.App).Take(&n)
+					db.DB().Where("nodename = ? AND app = ?", n.Nodename, n.App).Take(&n)
 				}
 			}
 		}
@@ -143,7 +146,7 @@ func postNodes(w http.ResponseWriter, r *http.Request) {
 		nodes[i] = n
 	}
 
-	tx := db.Clauses(clause.OnConflict{UpdateAll: true})
+	tx := db.DB().Clauses(clause.OnConflict{UpdateAll: true})
 	if err := tx.Create(&nodes).Error; err != nil {
 		http.Error(w, fmt.Sprintf("insert or update: %s", err), 500)
 		return

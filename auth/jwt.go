@@ -1,6 +1,7 @@
-package main
+package auth
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,6 +10,15 @@ import (
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
+)
+
+var (
+	TokenAuth        *jwtauth.JWTAuth
+	verifyBytes      []byte
+	verifyKey        *rsa.PublicKey
+	signKey          *rsa.PrivateKey
+	jwtSignKeyFile   string
+	jwtVerifyKeyFile string
 )
 
 func initJWT() error {
@@ -42,11 +52,11 @@ func initJWT() error {
 				finger := ssh.FingerprintLegacyMD5(pk)
 				log.Printf("  verify key sig: %s", finger)
 			}
-			tokenAuth = jwtauth.New("RS256", signKey, verifyKey)
+			TokenAuth = jwtauth.New("RS256", signKey, verifyKey)
 		}
 	} else {
 		log.Printf("Using JWT HMAC signature. This is less secure than RS256 signature and verification. Set both JWT_SIGN_KEY and JWT_VERIFY_KEY to paths of a RSA key-pair.")
-		tokenAuth = jwtauth.New("HMAC", []byte(jwtSignKey), nil)
+		TokenAuth = jwtauth.New("HMAC", []byte(jwtSignKey), nil)
 	}
 	return nil
 }

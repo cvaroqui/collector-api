@@ -1,4 +1,4 @@
-package main
+package tables
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/opensvc/collector-api/db"
 	"gorm.io/gorm"
 )
 
@@ -28,10 +29,13 @@ var (
 )
 
 func init() {
-	tables["tags"] = newTable("tags").SetEntry(Tag{})
+	db.Register(&db.Table{
+		Name:  "tags",
+		Entry: Tag{},
+	})
 }
 
-func tagCtx(next http.Handler) http.Handler {
+func TagCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		if reTagID.MatchString(id) {
@@ -54,31 +58,9 @@ func tagCtx(next http.Handler) http.Handler {
 	})
 }
 
-func delTag(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	tag, ok := ctx.Value("tag").(Tag)
-	if !ok {
-		http.Error(w, http.StatusText(422), 422)
-		return
-	}
-	// TODO: priv check
-	db.Where("tags.id = ?", tag.ID).Delete(&Tag{})
-	jsonEncode(w, []Tag{tag})
-}
-
-func getTag(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	n, ok := ctx.Value("tag").(Tag)
-	if !ok {
-		http.Error(w, http.StatusText(422), 422)
-		return
-	}
-	jsonEncode(w, []Tag{n})
-}
-
 func getTagByTagID(id string) (Tag, error) {
 	data := make([]Tag, 0)
-	result := db.Where("tag_id = ?", id).Find(&data)
+	result := db.DB().Where("tag_id = ?", id).Find(&data)
 	if result.Error != nil {
 		return Tag{}, result.Error
 	}
@@ -90,7 +72,7 @@ func getTagByTagID(id string) (Tag, error) {
 
 func getTagByID(id string) (Tag, error) {
 	data := make([]Tag, 0)
-	result := db.Where("id = ?", id).Find(&data)
+	result := db.DB().Where("id = ?", id).Find(&data)
 	if result.Error != nil {
 		return Tag{}, result.Error
 	}

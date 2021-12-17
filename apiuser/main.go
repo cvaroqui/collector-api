@@ -1,19 +1,15 @@
 package apiuser
 
 import (
-	"net/http"
-
+	"github.com/opensvc/collector-api/authuser"
+	"github.com/opensvc/collector-api/db"
+	"github.com/opensvc/collector-api/db/tables"
 	"github.com/shaj13/go-guardian/v2/auth"
-	"gorm.io/gorm"
 )
 
-const (
-	XPrivileges string = "privileges"
-)
-
-func DefaultApp(db *gorm.DB, t auth.Info) string {
+func DefaultApp(t auth.Info) string {
 	var app string
-	db.
+	db.DB().
 		Table("apps").
 		Joins("JOIN apps_responsibles ON apps.id = apps_responsibles.app_id").
 		Joins("JOIN auth_membership ON apps_responsibles.group_id = auth_membership.group_id").
@@ -25,9 +21,9 @@ func DefaultApp(db *gorm.DB, t auth.Info) string {
 	return app
 }
 
-func PrimaryGroup(db *gorm.DB, t auth.Info) string {
+func PrimaryGroup(t auth.Info) string {
 	var role string
-	db.
+	db.DB().
 		Table("auth_group").
 		Joins("JOIN auth_membership ON auth_group.id = auth_membership.group_id").
 		Where("auth_membership.primary_group = 'T' AND auth_membership.user_id = ?", t.GetID()).
@@ -36,44 +32,26 @@ func PrimaryGroup(db *gorm.DB, t auth.Info) string {
 	return role
 }
 
-func MakeExtensions(db *gorm.DB, id uint) auth.Extensions {
+func MakeNodeExtensions(node tables.Node) auth.Extensions {
 	ext := make(auth.Extensions)
-	ext[XPrivileges] = getPrivileges(db, id)
+	ext[authuser.XNodeID] = []string{node.NodeID}
+	ext[authuser.XApp] = []string{node.App}
 	return ext
 }
 
-func getPrivileges(db *gorm.DB, id uint) []string {
+func MakeUserExtensions(user tables.User) auth.Extensions {
+	ext := make(auth.Extensions)
+	ext[authuser.XPrivileges] = getPrivileges(user.ID)
+	return ext
+}
+
+func getPrivileges(id uint) []string {
 	var roles []string
-	db.
+	db.DB().
 		Table("auth_group").
 		Joins("JOIN auth_membership ON auth_group.id = auth_membership.group_id").
 		Joins("JOIN auth_user ON auth_membership.user_id = auth_user.id").
 		Where("auth_group.privilege = ? AND auth_user.id = ?", "T", id).
 		Pluck("role", &roles)
 	return roles
-}
-
-func IsManager(t auth.Info) bool {
-	return HasPrivilege(t, "Manager")
-}
-
-func HasPrivilege(t auth.Info, priv string) bool {
-	privs := t.GetExtensions().Values(XPrivileges)
-	for _, s := range privs {
-		if s == "Manager" {
-			return true
-		}
-		if s == priv {
-			return true
-		}
-	}
-	return false
-}
-
-func Privileges(t auth.Info) []string {
-	return t.GetExtensions().Values(XPrivileges)
-}
-
-func PrivError(w http.ResponseWriter, priv string) {
-	http.Error(w, priv, 401)
 }

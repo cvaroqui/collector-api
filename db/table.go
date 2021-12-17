@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/opensvc/collector-api/apiuser"
+	"github.com/opensvc/collector-api/authuser"
 	"github.com/opensvc/collector-api/funcopt"
 	"github.com/shaj13/go-guardian/v2/auth"
 	"github.com/ssrathi/go-attr"
@@ -27,9 +27,9 @@ type (
 		From, To string
 		Cols     [][]string
 	}
-	table struct {
-		name    string
-		entry   interface{}
+	Table struct {
+		Name    string
+		Entry   interface{}
 		propMap propMapping
 	}
 	TableResponse struct {
@@ -61,13 +61,15 @@ type (
 		paging            bool
 		validFiltersCount uint
 		tx                *gorm.DB
-		table             table
+		table             Table
 		joined            joinedTables
 		on                joinedTables
 	}
 )
 
 var (
+	tables map[string]*Table = map[string]*Table{}
+
 	reFilter   = regexp.MustCompile(`([a-zA-Z_.]+)\s*(=|>| |~|>=|<=)\s*(.*)`)
 	tableJoins = []tableJoin{
 		{From: "tags", To: "node_tags", Cols: [][]string{{"tag_id", "tag_id"}}},
@@ -92,6 +94,7 @@ var (
 		{From: "tags", To: "apps_publications", Via: []string{"svc_tags", "services", "apps"}},
 		{From: "tags", To: "auth_membership", Via: []string{"svc_tags", "services", "apps", "apps_publications"}},
 		{From: "nodes", To: "apps_publications", Via: []string{"apps"}},
+		{From: "nodes", To: "apps_responsibles", Via: []string{"apps"}},
 		{From: "nodes", To: "auth_membership", Via: []string{"apps", "apps_publications"}},
 		{From: "node_tags", To: "apps", Via: []string{"nodes"}},
 		{From: "node_tags", To: "apps_publications", Via: []string{"nodes", "apps"}},
@@ -106,7 +109,15 @@ var (
 	}
 )
 
-func (t table) Request(opts ...funcopt.O) *request {
+func Register(t *Table) {
+	tables[t.Name] = t
+}
+
+func Tab(name string) *Table {
+	return tables[name]
+}
+
+func (t Table) Request(opts ...funcopt.O) *request {
 	req := request{
 		table:       t,
 		tx:          t.Table(),
@@ -249,35 +260,16 @@ func (t property) String() string {
 	return t.Table + "." + t.Name
 }
 
-func newTable(name string) *table {
-	t := table{name: name}
-	return &t
+func (t Table) parseProperty(s string) property {
+	return parseProperty(s, t.Name)
 }
 
-func (t table) Name() string {
-	return t.name
+func (t Table) AutoMigrate() error {
+	return t.Table().AutoMigrate(t.Entry)
 }
 
-func (t table) Entry() interface{} {
-	return t.entry
-}
-
-func (t *table) SetEntry(e interface{}) *table {
-	t.entry = e
-	t.makePropMap(e)
-	return t
-}
-
-func (t table) parseProperty(s string) property {
-	return parseProperty(s, t.name)
-}
-
-func (t table) AutoMigrate() error {
-	return t.Table().AutoMigrate(t.entry)
-}
-
-func (t table) Table() *gorm.DB {
-	return db.Table(t.name)
+func (t Table) Table() *gorm.DB {
+	return db.Table(t.Name)
 }
 
 func (t request) HasValidFilters() bool {
@@ -364,7 +356,7 @@ func (t *request) withACL(user auth.Info) {
 }
 
 func (t *request) withWriteACL(user auth.Info) {
-	if apiuser.IsManager(user) {
+	if authuser.IsManager(user) {
 		return
 	}
 	if _, err := strconv.Atoi(user.GetID()); err != nil {
@@ -375,7 +367,7 @@ func (t *request) withWriteACL(user auth.Info) {
 		t.Where("nodes.node_id = ?", user.GetID())
 	} else {
 		// user auth
-		t.AutoJoin("apps_publications")
+		t.AutoJoin("apps_responsibles")
 		t.AutoJoin("auth_membership")
 		t.Where("apps_responsibles.group_id = auth_membership.group_id")
 		t.Where("auth_membership.user_id = ?", user.GetID())
@@ -386,7 +378,7 @@ func (t *request) withReadACL(user auth.Info) {
 	if !t.acl {
 		return
 	}
-	if apiuser.IsManager(user) {
+	if authuser.IsManager(user) {
 		return
 	}
 	if _, err := strconv.Atoi(user.GetID()); err != nil {
@@ -426,12 +418,12 @@ func getHops(from, to string) []string {
 }
 
 func (t *request) AutoJoin(table string) {
-	if table == t.table.name {
+	if table == t.table.Name {
 		// self join, noop
 		return
 	}
-	here := t.table.name
-	for _, there := range getHops(t.table.name, table) {
+	here := t.table.Name
+	for _, there := range getHops(t.table.Name, table) {
 		j, ok := findJoin(here, there)
 		if !ok {
 			log.Printf("missing autojoin from %s to %s", here, there)
@@ -487,7 +479,8 @@ func (t *request) TX(r *http.Request) *gorm.DB {
 	t.withOrders(orders)
 
 	// paging
-	offset, limit := page(r)
+	offset := queryOffset(r)
+	limit := queryLimit(r)
 	t.withPaging(offset, limit)
 
 	return t.tx
@@ -525,7 +518,8 @@ func (t *request) MakeReadTableResponse(r *http.Request) (*TableResponse, error)
 	}
 
 	// paging
-	offset, limit := page(r)
+	offset := queryOffset(r)
+	limit := queryLimit(r)
 	t.withPaging(offset, limit)
 
 	// fetch data
@@ -568,7 +562,7 @@ func availProps(props propSlice) propSlice {
 	return propSlice(ap)
 }
 
-func (t *table) makePropMap(i interface{}) {
+func (t *Table) makePropMap(i interface{}) {
 	t.propMap = make(propMapping)
 	fieldNames, err := attr.Names(i)
 	if err != nil {
@@ -581,7 +575,7 @@ func (t *table) makePropMap(i interface{}) {
 	}
 }
 
-func (t table) props() propSlice {
+func (t Table) props() propSlice {
 	props := make(propSlice, len(t.propMap))
 	i := 0
 	for prop, _ := range t.propMap {
@@ -591,7 +585,7 @@ func (t table) props() propSlice {
 	return props
 }
 
-func (t table) linePropValue(line interface{}, prop property) (interface{}, bool) {
+func (t Table) linePropValue(line interface{}, prop property) (interface{}, bool) {
 	if fieldName, ok := t.propMap[prop]; ok {
 		i, _ := attr.GetValue(line, fieldName)
 		return i, true
@@ -599,7 +593,7 @@ func (t table) linePropValue(line interface{}, prop property) (interface{}, bool
 	return nil, false
 }
 
-func (t table) lineMap(line interface{}, props propSlice) map[string]interface{} {
+func (t Table) lineMap(line interface{}, props propSlice) map[string]interface{} {
 	if len(props) == 0 {
 		props = t.props()
 	}
@@ -612,7 +606,7 @@ func (t table) lineMap(line interface{}, props propSlice) map[string]interface{}
 	return rm
 }
 
-func (t table) remap(data interface{}, props propSlice) []map[string]interface{} {
+func (t Table) remap(data interface{}, props propSlice) []map[string]interface{} {
 	switch reflect.TypeOf(data).Kind() {
 	case reflect.Ptr:
 		s := reflect.ValueOf(data).Elem()
@@ -649,22 +643,46 @@ func queryFilters(r *http.Request) []string {
 	return []string{}
 }
 
-func (t table) queryProps(r *http.Request) propSlice {
+func queryLimit(r *http.Request) (limit int) {
+	var err error
+	defaultLimit := 20
+	limitParam := r.URL.Query().Get("limit")
+	if limitParam == "" {
+		limit = defaultLimit
+	} else if limit, err = strconv.Atoi(limitParam); err != nil {
+		limit = defaultLimit
+	}
+	return
+}
+
+func queryOffset(r *http.Request) (offset int) {
+	var err error
+	defaultOffset := 0
+	offsetParam := r.URL.Query().Get("offset")
+	if offsetParam == "" {
+		offset = defaultOffset
+	} else if offset, err = strconv.Atoi(offsetParam); err != nil {
+		offset = defaultOffset
+	}
+	return
+}
+
+func (t Table) queryProps(r *http.Request) propSlice {
 	s := r.URL.Query().Get("props")
 	return t.parsePropSlice(s)
 }
 
-func (t table) queryGroups(r *http.Request) propSlice {
+func (t Table) queryGroups(r *http.Request) propSlice {
 	s := r.URL.Query().Get("groupby")
 	return t.parsePropSlice(s)
 }
 
-func (t table) queryOrders(r *http.Request) propSlice {
+func (t Table) queryOrders(r *http.Request) propSlice {
 	s := r.URL.Query().Get("orderby")
 	return t.parsePropSlice(s)
 }
 
-func (t table) parsePropSlice(s string) propSlice {
+func (t Table) parsePropSlice(s string) propSlice {
 	props := make(propSlice, 0)
 	for _, s := range strings.Split(s, ",") {
 		if s == "" {

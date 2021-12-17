@@ -1,30 +1,21 @@
 package main
 
 import (
-	"crypto/rsa"
-	"encoding/json"
-	"io"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/opensvc/collector-api/auth"
+	"github.com/opensvc/collector-api/db"
+	"github.com/opensvc/collector-api/db/tables"
 	_ "github.com/opensvc/collector-api/docs"
+	"github.com/opensvc/collector-api/routes"
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth/v5"
 	"github.com/go-chi/render"
 	"github.com/spf13/viper"
-)
-
-var (
-	tokenAuth        *jwtauth.JWTAuth
-	verifyBytes      []byte
-	verifyKey        *rsa.PublicKey
-	signKey          *rsa.PrivateKey
-	jwtSignKeyFile   string
-	jwtVerifyKeyFile string
 )
 
 func fatal(err interface{}) {
@@ -52,13 +43,10 @@ func main() {
 	if err := initConf(); err != nil {
 		fatal(err)
 	}
-	if err := initJWT(); err != nil {
+	if err := auth.Init(); err != nil {
 		fatal(err)
 	}
-	if err := initAuth(); err != nil {
-		fatal(err)
-	}
-	if err := initDB(); err != nil {
+	if err := db.Init(); err != nil {
 		fatal(err)
 	}
 	addr := viper.GetString("Listen")
@@ -81,60 +69,61 @@ func router() http.Handler {
 
 	// Protected routes
 	r.Group(func(r chi.Router) {
-		r.Use(authMiddleware)
+		r.Use(auth.Middleware)
 		r.Route("/auth/node/token", func(r chi.Router) {
-			r.Get("/", getNodeToken)
+			r.Get("/", routes.GetNodeToken)
 		})
 		r.Route("/auth/user/token", func(r chi.Router) {
-			r.Get("/", getUserToken)
+			r.Get("/", routes.GetUserToken)
 		})
 		r.Route("/nodes", func(r chi.Router) {
-			r.Get("/", getNodes)
-			r.Post("/", postNodes)
+			r.Get("/", routes.GetNodes)
+			r.Post("/", routes.PostNodes)
 			r.Route("/{id}", func(r chi.Router) {
-				r.Use(nodeCtx)
-				r.Get("/", getNode)
-				r.Delete("/", delNode)
-				r.Get("/candidate_tags", getNodeCandidateTags)
-				r.Get("/tags", getNodeTags)
+				r.Use(tables.NodeCtx)
+				r.Get("/", routes.GetNode)
+				r.Delete("/", routes.DelNode)
+				r.Post("/", routes.PostNode)
+				r.Get("/candidate_tags", routes.GetNodeCandidateTags)
+				r.Get("/tags", routes.GetNodeTags)
 			})
 			r.Route("/tags", func(r chi.Router) {
-				r.Get("/", getNodesTags)
+				r.Get("/", routes.GetNodesTags)
 				r.Route("/{id}", func(r chi.Router) {
-					r.Use(nodeTagCtx)
-					r.Get("/", getNodeTag)
+					r.Use(tables.NodeTagCtx)
+					r.Get("/", routes.GetNodeTag)
 				})
 			})
 		})
 		r.Route("/services", func(r chi.Router) {
-			r.Get("/", getServices)
+			r.Get("/", routes.GetServices)
 			r.Route("/{id}", func(r chi.Router) {
-				r.Use(serviceCtx)
-				r.Get("/", getService)
-				r.Get("/candidate_tags", getServiceCandidateTags)
-				r.Get("/tags", getServiceTags)
+				r.Use(tables.ServiceCtx)
+				r.Get("/", routes.GetService)
+				r.Get("/candidate_tags", routes.GetServiceCandidateTags)
+				r.Get("/tags", routes.GetServiceTags)
 			})
 			r.Route("/tags", func(r chi.Router) {
-				r.Get("/", getServicesTags)
+				r.Get("/", routes.GetServicesTags)
 				r.Route("/{id}", func(r chi.Router) {
-					r.Use(serviceTagCtx)
-					r.Get("/", getServiceTag)
+					r.Use(tables.ServiceTagCtx)
+					r.Get("/", routes.GetServiceTag)
 				})
 			})
 		})
 		r.Route("/tags", func(r chi.Router) {
-			r.Get("/", getTags)
-			r.Post("/", postTags)
-			r.Delete("/", delTags)
+			r.Get("/", routes.GetTags)
+			r.Post("/", routes.PostTags)
+			r.Delete("/", routes.DelTags)
 			r.Route("/{id}", func(r chi.Router) {
-				r.Use(tagCtx)
-				r.Get("/", getTag)
-				r.Delete("/", delTag)
+				r.Use(tables.TagCtx)
+				r.Get("/", routes.GetTag)
+				r.Delete("/", routes.DelTag)
 				r.Route("/nodes", func(r chi.Router) {
-					r.Get("/", getTagNodes)
+					r.Get("/", routes.GetTagNodes)
 				})
 				r.Route("/services", func(r chi.Router) {
-					r.Get("/", getTagServices)
+					r.Get("/", routes.GetTagServices)
 				})
 			})
 		})
@@ -148,10 +137,4 @@ func router() http.Handler {
 	})
 
 	return r
-}
-
-func jsonEncode(w io.Writer, data interface{}) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "    ")
-	return enc.Encode(data)
 }

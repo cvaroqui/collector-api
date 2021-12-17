@@ -1,16 +1,14 @@
-package main
+package tables
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/opensvc/collector-api/db"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 /*
@@ -70,13 +68,16 @@ type User struct {
 }
 
 func init() {
-	tables["auth_user"] = newTable("auth_user").SetEntry(User{})
+	db.Register(&db.Table{
+		Name:  "auth_user",
+		Entry: User{},
+	})
 }
 
 func userCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
-		n, err := getUserByID(id)
+		n, err := GetUserByID(id)
 		if err != nil {
 			http.Error(w, http.StatusText(404), 404)
 			return
@@ -86,31 +87,9 @@ func userCtx(next http.Handler) http.Handler {
 	})
 }
 
-func delUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user, ok := ctx.Value("user").(User)
-	if !ok {
-		http.Error(w, http.StatusText(422), 422)
-		return
-	}
-	// TODO: priv check
-	db.Table("auth_user").Where("auth_user.id = ?", user.ID).Delete(&User{})
-	jsonEncode(w, []User{user})
-}
-
-func getUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	n, ok := ctx.Value("user").(User)
-	if !ok {
-		http.Error(w, http.StatusText(422), 422)
-		return
-	}
-	jsonEncode(w, []User{n})
-}
-
-func getUserByUsername(id string) (User, error) {
+func GetUserByUsername(id string) (User, error) {
 	data := make([]User, 0)
-	result := db.Table("auth_user").Where("username = ?", id).Find(&data)
+	result := db.DB().Table("auth_user").Where("username = ?", id).Find(&data)
 	if result.Error != nil {
 		return User{}, result.Error
 	}
@@ -120,9 +99,9 @@ func getUserByUsername(id string) (User, error) {
 	return data[0], nil
 }
 
-func getUserByEmail(id string) (User, error) {
+func GetUserByEmail(id string) (User, error) {
 	data := make([]User, 0)
-	result := db.Table("auth_user").Where("email = ?", id).Find(&data)
+	result := db.DB().Table("auth_user").Where("email = ?", id).Find(&data)
 	if result.Error != nil {
 		return User{}, result.Error
 	}
@@ -132,9 +111,9 @@ func getUserByEmail(id string) (User, error) {
 	return data[0], nil
 }
 
-func getUserByID(id string) (User, error) {
+func GetUserByID(id string) (User, error) {
 	data := make([]User, 0)
-	result := db.Table("auth_user").Where("id = ?", id).Find(&data)
+	result := db.DB().Table("auth_user").Where("id = ?", id).Find(&data)
 	if result.Error != nil {
 		return User{}, result.Error
 	}
@@ -142,38 +121,4 @@ func getUserByID(id string) (User, error) {
 		return User{}, fmt.Errorf("not found")
 	}
 	return data[0], nil
-}
-
-func getUsers(w http.ResponseWriter, r *http.Request) {
-	//_, claims, _ := jwtauth.FromContext(r.Context())
-	rq := tables["auth_user"].Request()
-	td, err := rq.MakeReadTableResponse(r)
-	if err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-	if err := jsonEncode(w, td); err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-}
-
-func postUsers(w http.ResponseWriter, r *http.Request) {
-	users := make([]User, 0)
-	user := User{}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-	if err := json.Unmarshal(body, &user); err == nil {
-		// single entry
-		users = append(users, user)
-	} else if err := json.Unmarshal(body, &users); err != nil {
-		// list of entry
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-	for _, user := range users {
-		tx := db.Clauses(clause.OnConflict{UpdateAll: true})
-		if err := tx.Create(&user).Error; err != nil {
-			http.Error(w, fmt.Sprint(err), 500)
-		}
-	}
 }

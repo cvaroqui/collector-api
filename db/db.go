@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"fmt"
@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	db     *gorm.DB
-	tables map[string]*table = map[string]*table{}
+	db *gorm.DB
 )
 
 func dbOpen() (*gorm.DB, error) {
@@ -90,7 +89,7 @@ func dbMigrate() error {
 	return nil
 }
 
-func initDB() error {
+func Init() error {
 	var err error
 	if db, err = dbOpen(); err != nil {
 		return errors.Wrap(err, "connect database")
@@ -99,4 +98,8 @@ func initDB() error {
 		return errors.Wrap(err, "migrate database schema")
 	}
 	return nil
+}
+
+func DB() *gorm.DB {
+	return db
 }

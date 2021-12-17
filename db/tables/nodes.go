@@ -1,4 +1,4 @@
-package main
+package tables
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/opensvc/collector-api/db"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
@@ -100,7 +101,10 @@ func (t *Node) BeforeCreate(tx *gorm.DB) error {
 }
 
 func init() {
-	tables["nodes"] = newTable("nodes").SetEntry(Node{})
+	db.Register(&db.Table{
+		Name:  "nodes",
+		Entry: Node{},
+	})
 }
 
 var (
@@ -108,12 +112,12 @@ var (
 	reID, _   = regexp.Compile("^[0-9]+$")
 )
 
-func nodeFromCtx(r *http.Request) []Node {
+func NodeFromCtx(r *http.Request) []Node {
 	ctx := r.Context()
 	return ctx.Value("node").([]Node)
 }
 
-func nodeCtx(next http.Handler) http.Handler {
+func NodeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		if reUUID.MatchString(id) {
@@ -148,9 +152,9 @@ func nodeCtx(next http.Handler) http.Handler {
 	})
 }
 
-func getNodeByNodeID(nodeID string) ([]Node, error) {
+func GetNodeByNodeID(nodeID string) ([]Node, error) {
 	data := make([]Node, 0)
-	result := db.Where("nodes.node_id = ?", nodeID).Find(&data)
+	result := db.DB().Where("nodes.node_id = ?", nodeID).Find(&data)
 	if result.Error != nil {
 		return data, result.Error
 	}
@@ -159,9 +163,9 @@ func getNodeByNodeID(nodeID string) ([]Node, error) {
 
 func readableNodeByNodeID(r *http.Request, nodeID string) ([]Node, error) {
 	data := make([]Node, 0)
-	tx := tables["nodes"].Request(
-		TableRequestWithFilters(false),
-		TableRequestWithPaging(false),
+	tx := db.Tab("nodes").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
 	).TX(r)
 	result := tx.Where("nodes.node_id = ?", nodeID).Find(&data)
 	if result.Error != nil {
@@ -172,9 +176,9 @@ func readableNodeByNodeID(r *http.Request, nodeID string) ([]Node, error) {
 
 func readableNodeByName(r *http.Request, name string) ([]Node, error) {
 	data := make([]Node, 0)
-	tx := tables["nodes"].Request(
-		TableRequestWithFilters(false),
-		TableRequestWithPaging(false),
+	tx := db.Tab("nodes").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
 	).TX(r)
 	result := tx.Where("nodes.nodename = ?", name).Find(&data)
 	if result.Error != nil {
@@ -185,9 +189,9 @@ func readableNodeByName(r *http.Request, name string) ([]Node, error) {
 
 func readableNodeByID(r *http.Request, id string) ([]Node, error) {
 	data := make([]Node, 0)
-	tx := tables["nodes"].Request(
-		TableRequestWithFilters(false),
-		TableRequestWithPaging(false),
+	tx := db.Tab("nodes").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
 	).TX(r)
 	result := tx.Where("nodes.id = ?", id).Find(&data)
 	if result.Error != nil {

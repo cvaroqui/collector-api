@@ -1,4 +1,4 @@
-package main
+package tables
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/opensvc/collector-api/db"
 	"gorm.io/gorm"
 )
 
@@ -82,10 +83,13 @@ type Service struct {
 }
 
 func init() {
-	tables["services"] = newTable("services").SetEntry(Service{})
+	db.Register(&db.Table{
+		Name:  "services",
+		Entry: Service{},
+	})
 }
 
-func serviceCtx(next http.Handler) http.Handler {
+func ServiceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		if reUUID.MatchString(id) {
@@ -116,19 +120,9 @@ func serviceCtx(next http.Handler) http.Handler {
 	})
 }
 
-func getService(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	n, ok := ctx.Value("service").(Service)
-	if !ok {
-		http.Error(w, http.StatusText(422), 422)
-		return
-	}
-	jsonEncode(w, []Service{n})
-}
-
 func getServiceBySvcID(svcID string) (Service, error) {
 	data := make([]Service, 0)
-	result := db.Where("svc_id = ?", svcID).Find(&data)
+	result := db.DB().Where("svc_id = ?", svcID).Find(&data)
 	if result.Error != nil {
 		return Service{}, result.Error
 	}
@@ -140,7 +134,7 @@ func getServiceBySvcID(svcID string) (Service, error) {
 
 func getServiceByName(name string) (Service, error) {
 	data := make([]Service, 0)
-	result := db.Where("svcname = ?", name).Find(&data)
+	result := db.DB().Where("svcname = ?", name).Find(&data)
 	if result.Error != nil {
 		return Service{}, result.Error
 	}
@@ -152,7 +146,7 @@ func getServiceByName(name string) (Service, error) {
 
 func getServiceByID(id string) (Service, error) {
 	data := make([]Service, 0)
-	result := db.Where("id = ?", id).Find(&data)
+	result := db.DB().Where("id = ?", id).Find(&data)
 	if result.Error != nil {
 		return Service{}, result.Error
 	}
@@ -160,15 +154,4 @@ func getServiceByID(id string) (Service, error) {
 		return Service{}, fmt.Errorf("not found")
 	}
 	return data[0], nil
-}
-
-func getServices(w http.ResponseWriter, r *http.Request) {
-	rq := tables["services"].Request()
-	td, err := rq.MakeReadTableResponse(r)
-	if err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-	if err := jsonEncode(w, td); err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
 }
