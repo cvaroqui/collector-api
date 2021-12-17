@@ -175,6 +175,27 @@ definitions:
       meta:
         $ref: '#/definitions/main.tableResponseMeta'
     type: object
+  main.Tag:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      tag_created:
+        type: string
+      tag_data:
+        type: string
+      tag_exclude:
+        type: string
+      tag_id:
+        type: string
+      tag_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
   main.property:
     properties:
       desc:
@@ -306,6 +327,45 @@ paths:
       tags:
       - nodes
   /nodes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Delete a node by index, id or name.
+        The user must have the NodeManager privilege.
+        The user must be responsible for the node, via app responsibles.
+        Cascade delete on services instances, dashboard entries, checks, packages and patches.
+      parameters:
+      - description: the index of the entry in database, or uuid, or name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Node'
+            type: array
+        "204":
+          description: No Content
+          schema:
+            items:
+              type: string
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Delete a node
+      tags:
+      - nodes
     get:
       consumes:
       - application/json
@@ -339,6 +399,128 @@ paths:
       summary: Show a node
       tags:
       - nodes
+  /tags:
+    delete:
+      consumes:
+      - application/json
+      description: Deletings tags requires the TagManager privilege.
+      parameters:
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Tag'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Delete tags
+      tags:
+      - tags
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List tags
+      tags:
+      - tags
+    post:
+      consumes:
+      - application/json
+      description: Creating tags requires no privilege.
+      parameters:
+      - description: list of tags to create or update
+        in: body
+        name: tags
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/main.Tag'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Tag'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Create or update tags
+      tags:
+      - tags
 securityDefinitions:
   BasicAuth:
     type: basic

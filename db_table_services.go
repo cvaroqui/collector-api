@@ -163,8 +163,8 @@ func getServiceByID(id string) (Service, error) {
 }
 
 func getServices(w http.ResponseWriter, r *http.Request) {
-	req := tables["services"].Request()
-	td, err := req.MakeResponse(r)
+	rq := tables["services"].Request()
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}

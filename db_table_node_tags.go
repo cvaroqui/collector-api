@@ -64,7 +64,7 @@ func getNodeTagByID(id string) (NodeTag, error) {
 func getNodesTags(w http.ResponseWriter, r *http.Request) {
 	rq := tables["node_tags"].Request()
 	rq.AutoJoin("nodes")
-	td, err := rq.MakeResponse(r)
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
@@ -79,7 +79,7 @@ func getNodeTags(w http.ResponseWriter, r *http.Request) {
 	rq := tables["node_tags"].Request()
 	rq.AutoJoin("nodes")
 	rq.Where("nodes.id = ?", n.ID)
-	td, err := rq.MakeResponse(r)
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
@@ -95,7 +95,7 @@ func getNodeCandidateTags(w http.ResponseWriter, r *http.Request) {
 
 	rq := tables["tags"].Request()
 	rq.Where("tags.tag_id NOT IN (?)", exclude)
-	td, err := rq.MakeResponse(r)
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
@@ -110,7 +110,7 @@ func getTagNodes(w http.ResponseWriter, r *http.Request) {
 	rq := tables["nodes"].Request()
 	rq.AutoJoin("tags")
 	rq.Where("node_tags.tag_id = ?", tag.TagID)
-	td, err := rq.MakeResponse(r)
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}

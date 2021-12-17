@@ -60,6 +60,9 @@ func IsManager(t auth.Info) bool {
 func HasPrivilege(t auth.Info, priv string) bool {
 	privs := t.GetExtensions().Values(XPrivileges)
 	for _, s := range privs {
+		if s == "Manager" {
+			return true
+		}
 		if s == priv {
 			return true
 		}

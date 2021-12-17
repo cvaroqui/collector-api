@@ -104,73 +104,94 @@ func init() {
 }
 
 var (
-	reUUID, _ = regexp.Compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
-	reID, _   = regexp.Compile("[0-9]+")
+	reUUID, _ = regexp.Compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+	reID, _   = regexp.Compile("^[0-9]+$")
 )
+
+func nodeFromCtx(r *http.Request) []Node {
+	ctx := r.Context()
+	return ctx.Value("node").([]Node)
+}
 
 func nodeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		if reUUID.MatchString(id) {
-			n, err := getNodeByNodeID(id)
-			if err != nil {
-				http.Error(w, http.StatusText(404), 404)
+			if n, err := readableNodeByNodeID(r, id); err == nil {
+				ctx := context.WithValue(r.Context(), "node", n)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			} else {
+				http.Error(w, fmt.Sprint(err), 500)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "node", n)
-			next.ServeHTTP(w, r.WithContext(ctx))
 		} else if reID.MatchString(id) {
-			n, err := getNodeByID(id)
-			if err != nil {
-				http.Error(w, http.StatusText(404), 404)
+			if n, err := readableNodeByID(r, id); err == nil {
+				ctx := context.WithValue(r.Context(), "node", n)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			} else {
+				http.Error(w, fmt.Sprint(err), 500)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "node", n)
-			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			n, err := getNodeByName(id)
-			if err != nil {
-				http.Error(w, http.StatusText(404), 404)
+			if n, err := readableNodeByName(r, id); err == nil {
+				ctx := context.WithValue(r.Context(), "node", n)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			} else {
+				http.Error(w, fmt.Sprint(err), 500)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "node", n)
-			next.ServeHTTP(w, r.WithContext(ctx))
 		}
+		http.Error(w, "unsupported node id format", 500)
 	})
 }
 
-func getNodeByNodeID(nodeID string) (Node, error) {
+func getNodeByNodeID(nodeID string) ([]Node, error) {
 	data := make([]Node, 0)
-	result := db.Where("node_id = ?", nodeID).Find(&data)
+	result := db.Where("nodes.node_id = ?", nodeID).Find(&data)
 	if result.Error != nil {
-		return Node{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return Node{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }
 
-func getNodeByName(name string) (Node, error) {
+func readableNodeByNodeID(r *http.Request, nodeID string) ([]Node, error) {
 	data := make([]Node, 0)
-	result := db.Where("nodename = ?", name).Find(&data)
+	tx := tables["nodes"].Request(
+		TableRequestWithFilters(false),
+		TableRequestWithPaging(false),
+	).TX(r)
+	result := tx.Where("nodes.node_id = ?", nodeID).Find(&data)
 	if result.Error != nil {
-		return Node{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return Node{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }
 
-func getNodeByID(id string) (Node, error) {
+func readableNodeByName(r *http.Request, name string) ([]Node, error) {
 	data := make([]Node, 0)
-	result := db.Where("id = ?", id).Find(&data)
+	tx := tables["nodes"].Request(
+		TableRequestWithFilters(false),
+		TableRequestWithPaging(false),
+	).TX(r)
+	result := tx.Where("nodes.nodename = ?", name).Find(&data)
 	if result.Error != nil {
-		return Node{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return Node{}, fmt.Errorf("not found")
+	return data, nil
+}
+
+func readableNodeByID(r *http.Request, id string) ([]Node, error) {
+	data := make([]Node, 0)
+	tx := tables["nodes"].Request(
+		TableRequestWithFilters(false),
+		TableRequestWithPaging(false),
+	).TX(r)
+	result := tx.Where("nodes.id = ?", id).Find(&data)
+	if result.Error != nil {
+		return data, result.Error
 	}
-	return data[0], nil
+	return data, nil
 }

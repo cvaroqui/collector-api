@@ -12,7 +12,16 @@ import (
 func getNodeToken(w http.ResponseWriter, r *http.Request) {
 	exp := time.Minute * 10
 	user := auth.User(r)
-	n, _ := getNodeByNodeID(user.GetID())
+	nodes, err := getNodeByNodeID(user.GetID())
+	if err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+		return
+	}
+	if len(nodes) == 0 {
+		http.Error(w, fmt.Sprintf("%s (unknown node)", http.StatusText(403)), 403)
+		return
+	}
+	n := nodes[0]
 	expireAt := time.Now().Add(exp)
 	claims := map[string]interface{}{
 		"exp":        expireAt.Unix(),

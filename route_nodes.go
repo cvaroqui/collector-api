@@ -33,8 +33,8 @@ import (
 // @Router       /nodes  [get]
 //
 func getNodes(w http.ResponseWriter, r *http.Request) {
-	req := tables["nodes"].Request()
-	td, err := req.MakeResponse(r)
+	rq := tables["nodes"].Request()
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}

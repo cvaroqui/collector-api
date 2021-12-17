@@ -2,16 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type Tag struct {
@@ -101,38 +98,4 @@ func getTagByID(id string) (Tag, error) {
 		return Tag{}, fmt.Errorf("not found")
 	}
 	return data[0], nil
-}
-
-func getTags(w http.ResponseWriter, r *http.Request) {
-	//_, claims, _ := jwtauth.FromContext(r.Context())
-	req := tables["tags"].Request()
-	td, err := req.MakeResponse(r)
-	if err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-	if err := jsonEncode(w, td); err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-}
-
-func postTags(w http.ResponseWriter, r *http.Request) {
-	tags := make([]Tag, 0)
-	tag := Tag{}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-	if err := json.Unmarshal(body, &tag); err == nil {
-		// single entry
-		tags = append(tags, tag)
-	} else if err := json.Unmarshal(body, &tags); err != nil {
-		// list of entry
-		http.Error(w, fmt.Sprint(err), 500)
-	}
-	for _, tag := range tags {
-		tx := db.Clauses(clause.OnConflict{UpdateAll: true})
-		if err := tx.Create(&tag).Error; err != nil {
-			http.Error(w, fmt.Sprint(err), 500)
-		}
-	}
 }

@@ -63,7 +63,7 @@ func getServiceTagByID(id string) (ServiceTag, error) {
 
 func getServicesTags(w http.ResponseWriter, r *http.Request) {
 	rq := tables["svc_tags"].Request()
-	td, err := rq.MakeResponse(r)
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
@@ -78,7 +78,7 @@ func getServiceTags(w http.ResponseWriter, r *http.Request) {
 	rq := tables["tags"].Request()
 	rq.AutoJoin("svc_tags")
 	rq.Where("svc_tags.svc_id = ?", n.SvcID)
-	td, err := rq.MakeResponse(r)
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
@@ -94,7 +94,7 @@ func getServiceCandidateTags(w http.ResponseWriter, r *http.Request) {
 
 	rq := tables["tags"].Request()
 	rq.Where("tags.tag_id NOT IN (?)", exclude)
-	td, err := rq.MakeResponse(r)
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
@@ -109,7 +109,7 @@ func getTagServices(w http.ResponseWriter, r *http.Request) {
 	rq := tables["services"].Request()
 	rq.AutoJoin("tags")
 	rq.Where("svc_tags.tag_id = ?", tag.TagID)
-	td, err := rq.MakeResponse(r)
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}

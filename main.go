@@ -89,16 +89,17 @@ func router() http.Handler {
 			r.Get("/", getUserToken)
 		})
 		r.Route("/nodes", func(r chi.Router) {
-			r.With(pager).Get("/", getNodes)
+			r.Get("/", getNodes)
 			r.Post("/", postNodes)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(nodeCtx)
 				r.Get("/", getNode)
-				r.With(pager).Get("/candidate_tags", getNodeCandidateTags)
-				r.With(pager).Get("/tags", getNodeTags)
+				r.Delete("/", delNode)
+				r.Get("/candidate_tags", getNodeCandidateTags)
+				r.Get("/tags", getNodeTags)
 			})
 			r.Route("/tags", func(r chi.Router) {
-				r.With(pager).Get("/", getNodesTags)
+				r.Get("/", getNodesTags)
 				r.Route("/{id}", func(r chi.Router) {
 					r.Use(nodeTagCtx)
 					r.Get("/", getNodeTag)
@@ -106,15 +107,15 @@ func router() http.Handler {
 			})
 		})
 		r.Route("/services", func(r chi.Router) {
-			r.With(pager).Get("/", getServices)
+			r.Get("/", getServices)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(serviceCtx)
 				r.Get("/", getService)
-				r.With(pager).Get("/candidate_tags", getServiceCandidateTags)
-				r.With(pager).Get("/tags", getServiceTags)
+				r.Get("/candidate_tags", getServiceCandidateTags)
+				r.Get("/tags", getServiceTags)
 			})
 			r.Route("/tags", func(r chi.Router) {
-				r.With(pager).Get("/", getServicesTags)
+				r.Get("/", getServicesTags)
 				r.Route("/{id}", func(r chi.Router) {
 					r.Use(serviceTagCtx)
 					r.Get("/", getServiceTag)
@@ -122,17 +123,18 @@ func router() http.Handler {
 			})
 		})
 		r.Route("/tags", func(r chi.Router) {
-			r.With(pager).Get("/", getTags)
+			r.Get("/", getTags)
 			r.Post("/", postTags)
+			r.Delete("/", delTags)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(tagCtx)
 				r.Get("/", getTag)
 				r.Delete("/", delTag)
 				r.Route("/nodes", func(r chi.Router) {
-					r.With(pager).Get("/", getTagNodes)
+					r.Get("/", getTagNodes)
 				})
 				r.Route("/services", func(r chi.Router) {
-					r.With(pager).Get("/", getTagServices)
+					r.Get("/", getTagServices)
 				})
 			})
 		})

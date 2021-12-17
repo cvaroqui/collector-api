@@ -146,8 +146,8 @@ func getUserByID(id string) (User, error) {
 
 func getUsers(w http.ResponseWriter, r *http.Request) {
 	//_, claims, _ := jwtauth.FromContext(r.Context())
-	req := tables["auth_user"].Request()
-	td, err := req.MakeResponse(r)
+	rq := tables["auth_user"].Request()
+	td, err := rq.MakeReadTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/opensvc/collector-api/apiuser"
+	"github.com/opensvc/collector-api/funcopt"
 	"github.com/shaj13/go-guardian/v2/auth"
 	"github.com/ssrathi/go-attr"
 	"gorm.io/gorm"
@@ -54,10 +55,15 @@ type (
 	propMapping  map[property]string
 	joinedTables map[string]interface{}
 	request      struct {
-		tx     *gorm.DB
-		table  table
-		joined joinedTables
-		on     joinedTables
+		acl               bool
+		writeIntent       bool
+		filters           bool
+		paging            bool
+		validFiltersCount uint
+		tx                *gorm.DB
+		table             table
+		joined            joinedTables
+		on                joinedTables
 	}
 )
 
@@ -100,13 +106,18 @@ var (
 	}
 )
 
-func (t table) Request() *request {
+func (t table) Request(opts ...funcopt.O) *request {
 	req := request{
-		table:  t,
-		tx:     t.Table(),
-		joined: make(joinedTables),
-		on:     make(joinedTables),
+		table:       t,
+		tx:          t.Table(),
+		joined:      make(joinedTables),
+		on:          make(joinedTables),
+		paging:      true,
+		acl:         true,
+		filters:     true,
+		writeIntent: false,
 	}
+	_ = funcopt.Apply(&req, opts...)
 	return &req
 }
 
@@ -269,7 +280,15 @@ func (t table) Table() *gorm.DB {
 	return db.Table(t.name)
 }
 
+func (t request) HasValidFilters() bool {
+	return t.validFiltersCount > 0
+}
+
 func (t *request) withFilters(filters []string) {
+	if !t.filters {
+		return
+	}
+	t.validFiltersCount = 0
 	for _, s := range filters {
 		l := reFilter.FindStringSubmatch(s)
 		if l == nil {
@@ -311,6 +330,7 @@ func (t *request) withFilters(filters []string) {
 				t.tx = t.tx.Where(where, value)
 			}
 		}
+		t.validFiltersCount += 1
 	}
 }
 
@@ -333,21 +353,54 @@ func (t *request) withJoins(props propSlice) {
 }
 
 func (t *request) withACL(user auth.Info) {
+	if !t.acl {
+		return
+	}
+	if t.writeIntent {
+		t.withWriteACL(user)
+	} else {
+		t.withReadACL(user)
+	}
+}
+
+func (t *request) withWriteACL(user auth.Info) {
 	if apiuser.IsManager(user) {
 		return
 	}
 	if _, err := strconv.Atoi(user.GetID()); err != nil {
-		// node
+		// node auth
 		t.AutoJoin("apps")
 		t.AutoJoin("nodes")
 		t.Where("apps.app = nodes.app")
 		t.Where("nodes.node_id = ?", user.GetID())
 	} else {
+		// user auth
+		t.AutoJoin("apps_publications")
+		t.AutoJoin("auth_membership")
+		t.Where("apps_responsibles.group_id = auth_membership.group_id")
+		t.Where("auth_membership.user_id = ?", user.GetID())
+	}
+}
+
+func (t *request) withReadACL(user auth.Info) {
+	if !t.acl {
+		return
+	}
+	if apiuser.IsManager(user) {
+		return
+	}
+	if _, err := strconv.Atoi(user.GetID()); err != nil {
+		// node auth
+		t.AutoJoin("apps")
+		t.AutoJoin("nodes")
+		t.Where("apps.app = nodes.app")
+		t.Where("nodes.node_id = ?", user.GetID())
+	} else {
+		// user auth
 		t.AutoJoin("apps_publications")
 		t.AutoJoin("auth_membership")
 		t.Where("apps_publications.group_id = auth_membership.group_id")
 		t.Where("auth_membership.user_id = ?", user.GetID())
-		// user
 	}
 }
 
@@ -414,7 +467,33 @@ func (t *request) withOrders(orders propSlice) {
 	t.tx = t.tx.Order(strings.Join(sqlOrders, ","))
 }
 
-func (t *request) MakeResponse(r *http.Request) (*TableResponse, error) {
+func (t *request) withPaging(offset, limit int) {
+	if !t.paging {
+		return
+	}
+	t.tx = t.tx.Offset(offset).Limit(limit)
+}
+
+func (t *request) TX(r *http.Request) *gorm.DB {
+	user := auth.User(r)
+	t.withACL(user)
+
+	// filters
+	filters := queryFilters(r)
+	t.withFilters(filters)
+
+	// ordering
+	orders := t.table.queryOrders(r)
+	t.withOrders(orders)
+
+	// paging
+	offset, limit := page(r)
+	t.withPaging(offset, limit)
+
+	return t.tx
+}
+
+func (t *request) MakeReadTableResponse(r *http.Request) (*TableResponse, error) {
 	var total int64
 
 	user := auth.User(r)
@@ -425,7 +504,7 @@ func (t *request) MakeResponse(r *http.Request) (*TableResponse, error) {
 	t.withJoins(props)
 
 	// filters
-	filters := t.table.queryFilters(r)
+	filters := queryFilters(r)
 	t.withFilters(filters)
 
 	// grouping
@@ -436,14 +515,20 @@ func (t *request) MakeResponse(r *http.Request) (*TableResponse, error) {
 	orders := t.table.queryOrders(r)
 	t.withOrders(orders)
 
-	if err := t.tx.Count(&total).Error; err != nil {
-		return nil, err
+	meta := queryMeta(r)
+	if meta {
+		// meta.total
+		// compute before applying the paging
+		if err := t.tx.Count(&total).Error; err != nil {
+			return nil, err
+		}
 	}
 
 	// paging
 	offset, limit := page(r)
-	t.tx = t.tx.Offset(offset).Limit(limit)
+	t.withPaging(offset, limit)
 
+	// fetch data
 	data := make([]map[string]interface{}, 0)
 	if err := t.tx.Find(&data).Error; err != nil {
 		return nil, err
@@ -452,7 +537,7 @@ func (t *request) MakeResponse(r *http.Request) (*TableResponse, error) {
 	td := &TableResponse{}
 	td.Data = data
 	//td.Data = t.remap(data, props)
-	if queryMeta(r) {
+	if meta {
 		td.Meta = &tableResponseMeta{
 			Total:          total,
 			Offset:         offset,
@@ -557,7 +642,7 @@ func queryMeta(r *http.Request) bool {
 	}
 }
 
-func (t table) queryFilters(r *http.Request) []string {
+func queryFilters(r *http.Request) []string {
 	if l, ok := r.URL.Query()["filters"]; ok {
 		return l
 	}
@@ -588,4 +673,33 @@ func (t table) parsePropSlice(s string) propSlice {
 		props = append(props, t.parseProperty(s))
 	}
 	return props
+}
+
+func TableRequestWithWriteIntent(v bool) funcopt.O {
+	return funcopt.F(func(i interface{}) error {
+		rq := i.(*request)
+		rq.writeIntent = v
+		return nil
+	})
+}
+func TableRequestWithACL(v bool) funcopt.O {
+	return funcopt.F(func(i interface{}) error {
+		rq := i.(*request)
+		rq.acl = v
+		return nil
+	})
+}
+func TableRequestWithFilters(v bool) funcopt.O {
+	return funcopt.F(func(i interface{}) error {
+		rq := i.(*request)
+		rq.filters = v
+		return nil
+	})
+}
+func TableRequestWithPaging(v bool) funcopt.O {
+	return funcopt.F(func(i interface{}) error {
+		rq := i.(*request)
+		rq.paging = v
+		return nil
+	})
 }
