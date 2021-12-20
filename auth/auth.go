@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/md5"
 	"crypto/tls"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
@@ -57,7 +59,9 @@ func Middleware(next http.Handler) http.Handler {
 
 func validateNode(ctx context.Context, r *http.Request, username, password string) (auth.Info, error) {
 	data := make([]tables.Node, 0)
-	result := db.DB().Table("node").Joins("JOIN nodes ON nodes.node_id = auth_node.node_id").Where("auth_node.nodename = ? and auth_node.uuid = ?", username, password).Find(&data)
+	passwordMD5B := md5.Sum([]byte(password))
+	passwordMD5 := hex.EncodeToString(passwordMD5B[:])
+	result := db.DB().Table("auth_node").Joins("JOIN nodes ON nodes.node_id = auth_node.node_id").Where("auth_node.nodename = ? and md5(auth_node.uuid) = ?", username, passwordMD5).Select("nodes.*").Find(&data)
 	if result.Error != nil {
 		return nil, fmt.Errorf("node auth: %s", result.Error)
 	}
