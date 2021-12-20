@@ -486,7 +486,7 @@ func (t *request) TX(r *http.Request) *gorm.DB {
 	return t.tx
 }
 
-func (t *request) MakeReadTableResponse(r *http.Request) (*TableResponse, error) {
+func (t *request) MakeTableResponse(r *http.Request) (*TableResponse, error) {
 	var total int64
 
 	user := auth.User(r)
@@ -562,20 +562,23 @@ func availProps(props propSlice) propSlice {
 	return propSlice(ap)
 }
 
-func (t *Table) makePropMap(i interface{}) {
+func (t *Table) makePropMap() {
 	t.propMap = make(propMapping)
-	fieldNames, err := attr.Names(i)
+	fieldNames, err := attr.Names(t.Entry)
 	if err != nil {
 		return
 	}
 	for _, fieldName := range fieldNames {
-		if propName, err := attr.GetTag(i, fieldName, "json"); err == nil {
+		if propName, err := attr.GetTag(t.Entry, fieldName, "json"); err == nil {
 			t.propMap[t.parseProperty(propName)] = fieldName
 		}
 	}
 }
 
 func (t Table) props() propSlice {
+	if t.propMap == nil {
+		t.makePropMap()
+	}
 	props := make(propSlice, len(t.propMap))
 	i := 0
 	for prop, _ := range t.propMap {
