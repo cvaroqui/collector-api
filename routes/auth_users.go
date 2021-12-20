@@ -13,7 +13,7 @@ import (
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	rq := db.Tab("auth_user").Request()
-	td, err := rq.MakeReadTableResponse(r)
+	td, err := rq.MakeTableResponse(r)
 	if err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
 	}
