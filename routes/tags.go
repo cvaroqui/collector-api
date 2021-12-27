@@ -54,8 +54,8 @@ func GetTags(w http.ResponseWriter, r *http.Request) {
 // @Tags         tags
 // @Accept       json
 // @Produce      json
-// @Param        tags  body      []Tag  true  "list of tags to create or update"
-// @Success      200   {array}   Tag
+// @Param        tags  body      []tables.Tag  true  "list of tags to create or update"
+// @Success      200   {array}   tables.Tag
 // @Failure      500   {string}  string  "Internal Server Error"
 // @Router       /tags  [post]
 //
@@ -73,6 +73,7 @@ func PostTags(w http.ResponseWriter, r *http.Request) {
 	} else if err := json.Unmarshal(body, &tags); err != nil {
 		// list of entry
 		http.Error(w, fmt.Sprintf("unmarshal json: %s", err), 500)
+		return
 	}
 	tx := db.DB().Clauses(clause.OnConflict{UpdateAll: true})
 	if err := tx.Create(&tags).Error; err != nil {
@@ -94,7 +95,7 @@ func PostTags(w http.ResponseWriter, r *http.Request) {
 // @Tags         tags
 // @Accept       json
 // @Produce      json
-// @Success      200      {object}  []Tag
+// @Success      200      {object}  []tables.Tag
 // @Failure      403      {string}  string    "Forbidden"
 // @Failure      500      {string}  string    "Internal Server Error"
 // @Param        filters  query     []string  false  "property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)"

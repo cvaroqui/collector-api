@@ -82,12 +82,12 @@ func DelNode(w http.ResponseWriter, r *http.Request) {
 // @Tags         nodes
 // @Accept       json
 // @Produce      json
-// @Param        id     path      string  true  "the index of the entry in database, or uuid, or name"
+// @Param        id     path      string       true  "the index of the entry in database, or uuid, or name"
 // @Param        nodes  body      tables.Node  true  "node properties to create or update"
 // @Success      200    {array}   tables.Node
-// @Failure      401      {string}  string "missing NodeManager privilege"
-// @Failure      404      {string}  string "the entry to update does not exist"
-// @Failure      500      {string}  string
+// @Failure      401    {string}  string  "missing NodeManager privilege"
+// @Failure      404    {string}  string  "the entry to update does not exist"
+// @Failure      500    {string}  string
 // @Router       /nodes/{id}  [post]
 //
 func PostNode(w http.ResponseWriter, r *http.Request) {

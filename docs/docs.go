@@ -53,7 +53,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.TokenResponse"
+                            "$ref": "#/definitions/routes.TokenResponse"
                         }
                     },
                     "403": {
@@ -93,7 +93,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.TokenResponse"
+                            "$ref": "#/definitions/routes.TokenResponse"
                         }
                     },
                     "403": {
@@ -183,7 +183,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.TableResponse"
+                            "$ref": "#/definitions/db.TableResponse"
                         }
                     },
                     "500": {
@@ -223,7 +223,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/main.Node"
+                                "$ref": "#/definitions/tables.Node"
                             }
                         }
                     }
@@ -234,8 +234,146 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/main.Node"
+                                "$ref": "#/definitions/tables.Node"
                             }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/tags": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "List tags attachments to nodes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/tags/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags",
+                    "nodes"
+                ],
+                "summary": "Show a tag attachment to a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or uuid, or name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.NodeTag"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "500": {
@@ -283,7 +421,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/main.Node"
+                                "$ref": "#/definitions/tables.Node"
                             }
                         }
                     },
@@ -335,7 +473,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.Node"
+                            "$ref": "#/definitions/tables.Node"
                         }
                     }
                 ],
@@ -345,7 +483,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/main.Node"
+                                "$ref": "#/definitions/tables.Node"
                             }
                         }
                     },
@@ -404,7 +542,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/main.Node"
+                                "$ref": "#/definitions/tables.Node"
                             }
                         }
                     },
@@ -415,6 +553,722 @@ var doc = `{
                             "items": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/candidate_tags": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "List existing tags not already attached to a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/tags": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "List tags attached to a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/tags/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags",
+                    "nodes"
+                ],
+                "summary": "Show a tag attachment to a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or uuid, or name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.NodeTag"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "services"
+                ],
+                "summary": "List services",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/tags": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "List tags attachments to services",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/tags/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "services"
+                ],
+                "summary": "Show a tag attachment to a service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or uuid, or name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.ServiceTag"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Show a service by index, id or name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "services"
+                ],
+                "summary": "Show a service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or uuid, or name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.Service"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/{id}/candidate_tags": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "List existing tags not already attached to a service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/{id}/tags": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "List tags attached to a service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/{id}/tags/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "services"
+                ],
+                "summary": "Show a tag attachment to a service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or uuid, or name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.ServiceTag"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "500": {
@@ -497,7 +1351,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.TableResponse"
+                            "$ref": "#/definitions/db.TableResponse"
                         }
                     },
                     "500": {
@@ -537,7 +1391,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/main.Tag"
+                                "$ref": "#/definitions/tables.Tag"
                             }
                         }
                     }
@@ -548,7 +1402,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/main.Tag"
+                                "$ref": "#/definitions/tables.Tag"
                             }
                         }
                     },
@@ -615,8 +1469,537 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/main.Tag"
+                                "$ref": "#/definitions/tables.Tag"
                             }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/tags/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "Show a tag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or uuid, or name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.Tag"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a tag by index, uuid or name.\nRequires the TagManager privilege.\nCascade deletes the tag attachements to nodes and services.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "Delete a tag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or uuid, or name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.Tag"
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/tags/{id}/nodes": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "List nodes having a specific tag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/tags/{id}/services": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "List services having a specific tag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List users",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "The user must be in the UserManager privilege group to modify tiers users properties.\nThe user must be in the SelfManager privilege group to modify its user properties.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create or update users",
+                "parameters": [
+                    {
+                        "description": "list of users to create or update",
+                        "name": "users",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.User"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.User"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Show a user by index, email or login",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Show a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or uuid, or name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.User"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a user by index, email or login",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the index of the entry in database, or email, or login name",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tables.User"
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "403": {
@@ -636,6 +2019,67 @@ var doc = `{
         }
     },
     "definitions": {
+        "db.TableResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/db.tableResponseMeta"
+                }
+            }
+        },
+        "db.property": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "remap": {
+                    "type": "string"
+                },
+                "table": {
+                    "type": "string"
+                }
+            }
+        },
+        "db.tableResponseMeta": {
+            "type": "object",
+            "properties": {
+                "available_props": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/db.property"
+                    }
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "included_props": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/db.property"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "gorm.DeletedAt": {
             "type": "object",
             "properties": {
@@ -648,7 +2092,18 @@ var doc = `{
                 }
             }
         },
-        "main.Node": {
+        "routes.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                },
+                "token_expire_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "tables.Node": {
             "type": "object",
             "properties": {
                 "action_type": {
@@ -884,22 +2339,148 @@ var doc = `{
                 }
             }
         },
-        "main.TableResponse": {
+        "tables.NodeTag": {
             "type": "object",
             "properties": {
-                "data": {
+                "created": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "node_id": {
+                    "type": "string"
+                },
+                "tag_attach_data": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "additionalProperties": true
+                        "type": "integer"
                     }
                 },
-                "meta": {
-                    "$ref": "#/definitions/main.tableResponseMeta"
+                "tag_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
-        "main.Tag": {
+        "tables.Service": {
+            "type": "object",
+            "properties": {
+                "cluster_id": {
+                    "type": "string"
+                },
+                "created": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "svc_app": {
+                    "type": "string"
+                },
+                "svc_avail_status": {
+                    "type": "string"
+                },
+                "svc_config_updated": {
+                    "type": "string"
+                },
+                "svc_env": {
+                    "type": "string"
+                },
+                "svc_flex_max_nodes": {
+                    "type": "integer"
+                },
+                "svc_flex_min_nodes": {
+                    "type": "integer"
+                },
+                "svc_flex_target": {
+                    "type": "integer"
+                },
+                "svc_frozen": {
+                    "type": "string"
+                },
+                "svc_ha": {
+                    "type": "string"
+                },
+                "svc_id": {
+                    "type": "string"
+                },
+                "svc_placement": {
+                    "type": "string"
+                },
+                "svc_provisioned": {
+                    "type": "string"
+                },
+                "svc_snooze_till": {
+                    "type": "string"
+                },
+                "svc_status": {
+                    "type": "string"
+                },
+                "svc_topology": {
+                    "type": "string"
+                },
+                "svc_wave": {
+                    "type": "string"
+                },
+                "svcname": {
+                    "type": "string"
+                },
+                "updated": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "tables.ServiceTag": {
+            "type": "object",
+            "properties": {
+                "created": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "svc_id": {
+                    "type": "string"
+                },
+                "tag_attach_data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "tag_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "tables.Tag": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -931,60 +2512,80 @@ var doc = `{
                 }
             }
         },
-        "main.TokenResponse": {
+        "tables.User": {
             "type": "object",
             "properties": {
-                "token": {
+                "created_at": {
                     "type": "string"
                 },
-                "token_expire_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.property": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "boolean"
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
                 },
-                "name": {
+                "email": {
                     "type": "string"
                 },
-                "remap": {
+                "email_log_level": {
                     "type": "string"
                 },
-                "table": {
+                "email_notifications": {
                     "type": "string"
-                }
-            }
-        },
-        "main.tableResponseMeta": {
-            "type": "object",
-            "properties": {
-                "available_props": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.property"
-                    }
                 },
-                "count": {
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
                     "type": "integer"
                 },
-                "included_props": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.property"
-                    }
+                "im_log_level": {
+                    "type": "string"
                 },
-                "limit": {
+                "im_notifications": {
+                    "type": "string"
+                },
+                "im_notifications_delay": {
                     "type": "integer"
                 },
-                "offset": {
+                "im_type": {
+                    "type": "string"
+                },
+                "im_username": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "lock_filter": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone_work": {
+                    "type": "string"
+                },
+                "quota_app": {
                     "type": "integer"
                 },
-                "total": {
+                "quota_docker_registries": {
                     "type": "integer"
+                },
+                "quota_org_group": {
+                    "type": "integer"
+                },
+                "registration_id": {
+                    "type": "string"
+                },
+                "registration_key": {
+                    "type": "string"
+                },
+                "reset_password_key": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         }

@@ -35,49 +35,51 @@ func init() {
 	})
 }
 
+func TagFromCtx(r *http.Request) []Tag {
+	i := r.Context().Value("tag")
+	if i == nil {
+		return []Tag{}
+	}
+	return i.([]Tag)
+}
+
 func TagCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		if reTagID.MatchString(id) {
-			n, err := getTagByTagID(id)
+			tags, err := getTagByTagID(id)
 			if err != nil {
-				http.Error(w, http.StatusText(404), 404)
+				http.Error(w, fmt.Sprint(err), 500)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "tag", n)
+			ctx := context.WithValue(r.Context(), "tag", tags)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			n, err := getTagByID(id)
+			tags, err := getTagByID(id)
 			if err != nil {
-				http.Error(w, http.StatusText(404), 404)
+				http.Error(w, fmt.Sprint(err), 500)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "tag", n)
+			ctx := context.WithValue(r.Context(), "tag", tags)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
 }
 
-func getTagByTagID(id string) (Tag, error) {
+func getTagByTagID(id string) ([]Tag, error) {
 	data := make([]Tag, 0)
 	result := db.DB().Where("tag_id = ?", id).Find(&data)
 	if result.Error != nil {
-		return Tag{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return Tag{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }
 
-func getTagByID(id string) (Tag, error) {
+func getTagByID(id string) ([]Tag, error) {
 	data := make([]Tag, 0)
 	result := db.DB().Where("id = ?", id).Find(&data)
 	if result.Error != nil {
-		return Tag{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return Tag{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }

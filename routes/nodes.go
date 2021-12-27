@@ -44,6 +44,7 @@ func GetNodes(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := jsonEncode(w, td); err != nil {
 		http.Error(w, fmt.Sprint(err), 500)
+		return
 	}
 }
 
@@ -58,8 +59,8 @@ func GetNodes(w http.ResponseWriter, r *http.Request) {
 // @Tags         nodes
 // @Accept       json
 // @Produce      json
-// @Param        nodes  body      []Node  true  "list of nodes to create or update"
-// @Success      200    {array}   Node
+// @Param        nodes  body      []tables.Node  true  "list of nodes to create or update"
+// @Success      200    {array}   tables.Node
 // @Failure      500      {string}  string    "Internal Server Error"
 // @Router       /nodes  [post]
 //

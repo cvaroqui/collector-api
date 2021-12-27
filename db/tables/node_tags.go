@@ -30,27 +30,60 @@ func init() {
 	})
 }
 
+func NodeTagFromCtx(r *http.Request) []NodeTag {
+	i := r.Context().Value("nodeTag")
+	if i == nil {
+		return []NodeTag{}
+	}
+	return i.([]NodeTag)
+}
+
 func NodeTagCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "id")
-		n, err := getNodeTagByID(r, id)
-		if err != nil { // TODO: return list and let users decide about errs
-			http.Error(w, http.StatusText(404), 404)
-			return
+		nodes := NodeFromCtx(r)
+		tags := TagFromCtx(r)
+		if len(nodes) == 1 && len(tags) == 1 {
+			n, err := getNodeTagByNodeIDAndTagID(r, nodes[0].NodeID, tags[0].TagID)
+			if err != nil {
+				http.Error(w, fmt.Sprint(err), 500)
+				return
+			}
+			ctx := context.WithValue(r.Context(), "nodeTag", n)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		} else {
+			id := chi.URLParam(r, "id")
+			n, err := getNodeTagByID(r, id)
+			if err != nil {
+				http.Error(w, fmt.Sprint(err), 500)
+				return
+			}
+			ctx := context.WithValue(r.Context(), "nodeTag", n)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		}
-		ctx := context.WithValue(r.Context(), "nodeTag", n)
-		next.ServeHTTP(w, r.WithContext(ctx))
+
 	})
 }
 
-func getNodeTagByID(r *http.Request, id string) (NodeTag, error) {
+func getNodeTagByNodeIDAndTagID(r *http.Request, nodeID, tagID string) ([]NodeTag, error) {
 	data := make([]NodeTag, 0)
-	result := db.Tab("node_tags").Request().TX(r).Where("id = ?", id).Find(&data)
-	if result.Error != nil {
-		return NodeTag{}, result.Error
+	tx := db.Tab("node_tags").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
+	).TX(r)
+	if err := tx.Where("node_tags.node_id = ? AND node_tags.tag_id = ?", nodeID, tagID).Find(&data).Error; err != nil {
+		return data, err
 	}
-	if len(data) == 0 {
-		return NodeTag{}, fmt.Errorf("not found")
+	return data, nil
+}
+
+func getNodeTagByID(r *http.Request, id string) ([]NodeTag, error) {
+	data := make([]NodeTag, 0)
+	tx := db.Tab("node_tags").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
+	).TX(r)
+	if err := tx.Where("id = ?", id).Find(&data).Error; err != nil {
+		return data, err
 	}
-	return data[0], nil
+	return data, nil
 }

@@ -30,27 +30,59 @@ func init() {
 	})
 }
 
+func ServiceTagFromCtx(r *http.Request) []ServiceTag {
+	i := r.Context().Value("serviceTag")
+	if i == nil {
+		return []ServiceTag{}
+	}
+	return i.([]ServiceTag)
+}
+
 func ServiceTagCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "id")
-		n, err := getServiceTagByID(id)
-		if err != nil {
-			http.Error(w, http.StatusText(404), 404)
-			return
+		services := ServiceFromCtx(r)
+		tags := TagFromCtx(r)
+		if len(services) == 1 && len(tags) == 1 {
+			n, err := getServiceTagBySvcIDAndTagID(r, services[0].SvcID, tags[0].TagID)
+			if err != nil {
+				http.Error(w, fmt.Sprint(err), 500)
+				return
+			}
+			ctx := context.WithValue(r.Context(), "serviceTag", n)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		} else {
+			id := chi.URLParam(r, "id")
+			n, err := getServiceTagByID(r, id)
+			if err != nil {
+				http.Error(w, fmt.Sprint(err), 500)
+				return
+			}
+			ctx := context.WithValue(r.Context(), "serviceTag", n)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		}
-		ctx := context.WithValue(r.Context(), "serviceTag", n)
-		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func getServiceTagByID(id string) (ServiceTag, error) {
+func getServiceTagBySvcIDAndTagID(r *http.Request, svcID, tagID string) ([]ServiceTag, error) {
 	data := make([]ServiceTag, 0)
-	result := db.DB().Where("id = ?", id).Find(&data)
-	if result.Error != nil {
-		return ServiceTag{}, result.Error
+	tx := db.Tab("svc_tags").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
+	).TX(r)
+	if err := tx.Where("svc_tags.node_id = ? AND svc_tags.tag_id = ?", svcID, tagID).Find(&data).Error; err != nil {
+		return data, err
 	}
-	if len(data) == 0 {
-		return ServiceTag{}, fmt.Errorf("not found")
+	return data, nil
+}
+
+func getServiceTagByID(r *http.Request, id string) ([]ServiceTag, error) {
+	data := make([]ServiceTag, 0)
+	tx := db.Tab("svc_tags").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
+	).TX(r)
+	if err := tx.Where("id = ?", id).Find(&data).Error; err != nil {
+		return data, err
 	}
-	return data[0], nil
+	return data, nil
 }

@@ -1,5 +1,45 @@
 basePath: /
 definitions:
+  db.TableResponse:
+    properties:
+      data:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      meta:
+        $ref: '#/definitions/db.tableResponseMeta'
+    type: object
+  db.property:
+    properties:
+      desc:
+        type: boolean
+      name:
+        type: string
+      remap:
+        type: string
+      table:
+        type: string
+    type: object
+  db.tableResponseMeta:
+    properties:
+      available_props:
+        items:
+          $ref: '#/definitions/db.property'
+        type: array
+      count:
+        type: integer
+      included_props:
+        items:
+          $ref: '#/definitions/db.property'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
   gorm.DeletedAt:
     properties:
       time:
@@ -8,7 +48,14 @@ definitions:
         description: Valid is true if Time is not NULL
         type: boolean
     type: object
-  main.Node:
+  routes.TokenResponse:
+    properties:
+      token:
+        type: string
+      token_expire_at:
+        type: string
+    type: object
+  tables.Node:
     properties:
       action_type:
         type: string
@@ -165,17 +212,100 @@ definitions:
       warranty_end:
         type: string
     type: object
-  main.TableResponse:
+  tables.NodeTag:
     properties:
-      data:
+      created:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      node_id:
+        type: string
+      tag_attach_data:
         items:
-          additionalProperties: true
-          type: object
+          type: integer
         type: array
-      meta:
-        $ref: '#/definitions/main.tableResponseMeta'
+      tag_id:
+        type: string
+      updated_at:
+        type: string
     type: object
-  main.Tag:
+  tables.Service:
+    properties:
+      cluster_id:
+        type: string
+      created:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      svc_app:
+        type: string
+      svc_avail_status:
+        type: string
+      svc_config_updated:
+        type: string
+      svc_env:
+        type: string
+      svc_flex_max_nodes:
+        type: integer
+      svc_flex_min_nodes:
+        type: integer
+      svc_flex_target:
+        type: integer
+      svc_frozen:
+        type: string
+      svc_ha:
+        type: string
+      svc_id:
+        type: string
+      svc_placement:
+        type: string
+      svc_provisioned:
+        type: string
+      svc_snooze_till:
+        type: string
+      svc_status:
+        type: string
+      svc_topology:
+        type: string
+      svc_wave:
+        type: string
+      svcname:
+        type: string
+      updated:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  tables.ServiceTag:
+    properties:
+      created:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      svc_id:
+        type: string
+      tag_attach_data:
+        items:
+          type: integer
+        type: array
+      tag_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  tables.Tag:
     properties:
       created_at:
         type: string
@@ -196,42 +326,56 @@ definitions:
       updated_at:
         type: string
     type: object
-  main.TokenResponse:
+  tables.User:
     properties:
-      token:
+      created_at:
         type: string
-      token_expire_at:
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      email:
         type: string
-    type: object
-  main.property:
-    properties:
-      desc:
-        type: boolean
-      name:
+      email_log_level:
         type: string
-      remap:
+      email_notifications:
         type: string
-      table:
+      first_name:
         type: string
-    type: object
-  main.tableResponseMeta:
-    properties:
-      available_props:
-        items:
-          $ref: '#/definitions/main.property'
-        type: array
-      count:
+      id:
         type: integer
-      included_props:
-        items:
-          $ref: '#/definitions/main.property'
-        type: array
-      limit:
+      im_log_level:
+        type: string
+      im_notifications:
+        type: string
+      im_notifications_delay:
         type: integer
-      offset:
+      im_type:
+        type: string
+      im_username:
+        type: string
+      last_name:
+        type: string
+      lock_filter:
+        type: string
+      password:
+        type: string
+      phone_work:
+        type: string
+      quota_app:
         type: integer
-      total:
+      quota_docker_registries:
         type: integer
+      quota_org_group:
+        type: integer
+      registration_id:
+        type: string
+      registration_key:
+        type: string
+      reset_password_key:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
     type: object
 info:
   contact:
@@ -255,7 +399,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.TokenResponse'
+            $ref: '#/definitions/routes.TokenResponse'
         "403":
           description: Forbidden
           schema:
@@ -280,7 +424,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.TokenResponse'
+            $ref: '#/definitions/routes.TokenResponse'
         "403":
           description: Forbidden
           schema:
@@ -337,7 +481,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.TableResponse'
+            $ref: '#/definitions/db.TableResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -362,7 +506,7 @@ paths:
         required: true
         schema:
           items:
-            $ref: '#/definitions/main.Node'
+            $ref: '#/definitions/tables.Node'
           type: array
       produces:
       - application/json
@@ -371,7 +515,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/main.Node'
+              $ref: '#/definitions/tables.Node'
             type: array
         "500":
           description: Internal Server Error
@@ -405,7 +549,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/main.Node'
+              $ref: '#/definitions/tables.Node'
             type: array
         "204":
           description: No Content
@@ -440,7 +584,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/main.Node'
+              $ref: '#/definitions/tables.Node'
             type: array
         "404":
           description: Not Found
@@ -471,7 +615,7 @@ paths:
         name: nodes
         required: true
         schema:
-          $ref: '#/definitions/main.Node'
+          $ref: '#/definitions/tables.Node'
       produces:
       - application/json
       responses:
@@ -479,7 +623,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/main.Node'
+              $ref: '#/definitions/tables.Node'
             type: array
         "401":
           description: missing NodeManager privilege
@@ -499,6 +643,538 @@ paths:
       summary: Update a node
       tags:
       - nodes
+  /nodes/{id}/candidate_tags:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List existing tags not already attached to a node
+      tags:
+      - tags
+  /nodes/{id}/tags:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List tags attached to a node
+      tags:
+      - tags
+  /nodes/{id}/tags/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: the index of the entry in database, or uuid, or name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.NodeTag'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Show a tag attachment to a node
+      tags:
+      - tags
+      - nodes
+  /nodes/tags:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List tags attachments to nodes
+      tags:
+      - tags
+  /nodes/tags/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: the index of the entry in database, or uuid, or name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.NodeTag'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Show a tag attachment to a node
+      tags:
+      - tags
+      - nodes
+  /services:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List services
+      tags:
+      - services
+  /services/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Show a service by index, id or name
+      parameters:
+      - description: the index of the entry in database, or uuid, or name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.Service'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Show a service
+      tags:
+      - services
+  /services/{id}/candidate_tags:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List existing tags not already attached to a service
+      tags:
+      - tags
+  /services/{id}/tags:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List tags attached to a service
+      tags:
+      - tags
+  /services/{id}/tags/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: the index of the entry in database, or uuid, or name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.ServiceTag'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Show a tag attachment to a service
+      tags:
+      - services
+  /services/tags:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List tags attachments to services
+      tags:
+      - tags
+  /services/tags/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: the index of the entry in database, or uuid, or name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.ServiceTag'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Show a tag attachment to a service
+      tags:
+      - services
   /tags:
     delete:
       consumes:
@@ -530,7 +1206,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/main.Tag'
+              $ref: '#/definitions/tables.Tag'
             type: array
         "403":
           description: Forbidden
@@ -586,7 +1262,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.TableResponse'
+            $ref: '#/definitions/db.TableResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -608,7 +1284,7 @@ paths:
         required: true
         schema:
           items:
-            $ref: '#/definitions/main.Tag'
+            $ref: '#/definitions/tables.Tag'
           type: array
       produces:
       - application/json
@@ -617,7 +1293,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/main.Tag'
+              $ref: '#/definitions/tables.Tag'
             type: array
         "500":
           description: Internal Server Error
@@ -629,6 +1305,341 @@ paths:
       summary: Create or update tags
       tags:
       - tags
+  /tags/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Delete a tag by index, uuid or name.
+        Requires the TagManager privilege.
+        Cascade deletes the tag attachements to nodes and services.
+      parameters:
+      - description: the index of the entry in database, or uuid, or name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.Tag'
+            type: array
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Delete a tag
+      tags:
+      - tags
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: the index of the entry in database, or uuid, or name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.Tag'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Show a tag
+      tags:
+      - tags
+  /tags/{id}/nodes:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List nodes having a specific tag
+      tags:
+      - tags
+  /tags/{id}/services:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List services having a specific tag
+      tags:
+      - tags
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: List users
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: |-
+        The user must be in the UserManager privilege group to modify tiers users properties.
+        The user must be in the SelfManager privilege group to modify its user properties.
+      parameters:
+      - description: list of users to create or update
+        in: body
+        name: users
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/tables.User'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Create or update users
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user by index, email or login
+      parameters:
+      - description: the index of the entry in database, or email, or login name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.User'
+            type: array
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Delete a user
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Show a user by index, email or login
+      parameters:
+      - description: the index of the entry in database, or uuid, or name
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tables.User'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: Show a user
+      tags:
+      - users
 securityDefinitions:
   BasicAuth:
     type: basic

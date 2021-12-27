@@ -1,6 +1,7 @@
 package authuser
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/shaj13/go-guardian/v2/auth"
@@ -34,7 +35,7 @@ func Privileges(t auth.Info) []string {
 }
 
 func PrivError(w http.ResponseWriter, priv string) {
-	http.Error(w, priv, 401)
+	http.Error(w, fmt.Sprintf("%s: requires %s", http.StatusText(403), priv), 401)
 }
 
 func IsNode(t auth.Info) bool {

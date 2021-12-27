@@ -113,8 +113,11 @@ var (
 )
 
 func NodeFromCtx(r *http.Request) []Node {
-	ctx := r.Context()
-	return ctx.Value("node").([]Node)
+	i := r.Context().Value("node")
+	if i == nil {
+		return []Node{}
+	}
+	return i.([]Node)
 }
 
 func NodeCtx(next http.Handler) http.Handler {

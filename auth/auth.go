@@ -74,17 +74,26 @@ func validateNode(ctx context.Context, r *http.Request, username, password strin
 
 func validateUser(ctx context.Context, r *http.Request, username, password string) (auth.Info, error) {
 	var (
-		user tables.User
-		err  error
+		users []tables.User
+		err   error
 	)
 	if strings.Contains(username, "@") {
-		user, err = tables.GetUserByEmail(username)
+		users, err = tables.GetUserByEmail(username)
 	} else {
-		user, err = tables.GetUserByUsername(username)
+		users, err = tables.GetUserByUsername(username)
 	}
 	if err != nil {
 		return nil, err
 	}
+	switch len(users) {
+	case 0:
+		return nil, fmt.Errorf("user not found")
+	case 1:
+		// ok
+	default:
+		return nil, fmt.Errorf("too many users found")
+	}
+	user := users[0]
 	if user.ID == 0 {
 		return nil, fmt.Errorf("user id zero")
 	}

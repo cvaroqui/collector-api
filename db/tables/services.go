@@ -2,7 +2,6 @@ package tables
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -89,6 +88,14 @@ func init() {
 	})
 }
 
+func ServiceFromCtx(r *http.Request) []Service {
+	i := r.Context().Value("service")
+	if i == nil {
+		return []Service{}
+	}
+	return i.([]Service)
+}
+
 func ServiceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
@@ -120,38 +127,29 @@ func ServiceCtx(next http.Handler) http.Handler {
 	})
 }
 
-func getServiceBySvcID(svcID string) (Service, error) {
+func getServiceBySvcID(svcID string) ([]Service, error) {
 	data := make([]Service, 0)
 	result := db.DB().Where("svc_id = ?", svcID).Find(&data)
 	if result.Error != nil {
-		return Service{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return Service{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }
 
-func getServiceByName(name string) (Service, error) {
+func getServiceByName(name string) ([]Service, error) {
 	data := make([]Service, 0)
 	result := db.DB().Where("svcname = ?", name).Find(&data)
 	if result.Error != nil {
-		return Service{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return Service{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }
 
-func getServiceByID(id string) (Service, error) {
+func getServiceByID(id string) ([]Service, error) {
 	data := make([]Service, 0)
 	result := db.DB().Where("id = ?", id).Find(&data)
 	if result.Error != nil {
-		return Service{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return Service{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }

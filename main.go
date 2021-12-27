@@ -77,55 +77,62 @@ func router() http.Handler {
 			r.Get("/", routes.GetUserToken)
 		})
 		r.Route("/nodes", func(r chi.Router) {
-			r.Get("/", routes.GetNodes)
-			r.Post("/", routes.PostNodes)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(tables.NodeCtx)
+				r.Get("/candidate_tags", routes.GetNodeCandidateTags)
+				r.Route("/tags", func(r chi.Router) {
+					r.Route("/{id}", func(r chi.Router) {
+						r.Use(tables.TagCtx)
+						r.Use(tables.NodeTagCtx)
+						r.Get("/", routes.GetNodeTag)
+					})
+					r.Get("/", routes.GetNodeTags)
+				})
 				r.Get("/", routes.GetNode)
 				r.Delete("/", routes.DelNode)
 				r.Post("/", routes.PostNode)
-				r.Get("/candidate_tags", routes.GetNodeCandidateTags)
-				r.Get("/tags", routes.GetNodeTags)
 			})
 			r.Route("/tags", func(r chi.Router) {
-				r.Get("/", routes.GetNodesTags)
 				r.Route("/{id}", func(r chi.Router) {
 					r.Use(tables.NodeTagCtx)
 					r.Get("/", routes.GetNodeTag)
 				})
+				r.Get("/", routes.GetNodesTags)
 			})
+			r.Get("/", routes.GetNodes)
+			r.Post("/", routes.PostNodes)
 		})
 		r.Route("/services", func(r chi.Router) {
-			r.Get("/", routes.GetServices)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(tables.ServiceCtx)
-				r.Get("/", routes.GetService)
 				r.Get("/candidate_tags", routes.GetServiceCandidateTags)
 				r.Get("/tags", routes.GetServiceTags)
+				r.Get("/", routes.GetService)
 			})
 			r.Route("/tags", func(r chi.Router) {
-				r.Get("/", routes.GetServicesTags)
 				r.Route("/{id}", func(r chi.Router) {
 					r.Use(tables.ServiceTagCtx)
 					r.Get("/", routes.GetServiceTag)
 				})
+				r.Get("/", routes.GetServicesTags)
 			})
+			r.Get("/", routes.GetServices)
 		})
 		r.Route("/tags", func(r chi.Router) {
-			r.Get("/", routes.GetTags)
-			r.Post("/", routes.PostTags)
-			r.Delete("/", routes.DelTags)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(tables.TagCtx)
-				r.Get("/", routes.GetTag)
-				r.Delete("/", routes.DelTag)
 				r.Route("/nodes", func(r chi.Router) {
 					r.Get("/", routes.GetTagNodes)
 				})
 				r.Route("/services", func(r chi.Router) {
 					r.Get("/", routes.GetTagServices)
 				})
+				r.Get("/", routes.GetTag)
+				r.Delete("/", routes.DelTag)
 			})
+			r.Get("/", routes.GetTags)
+			r.Post("/", routes.PostTags)
+			r.Delete("/", routes.DelTags)
 		})
 	})
 

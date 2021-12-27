@@ -74,12 +74,20 @@ func init() {
 	})
 }
 
+func UserFromCtx(r *http.Request) []User {
+	i := r.Context().Value("user")
+	if i == nil {
+		return []User{}
+	}
+	return i.([]User)
+}
+
 func userCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		n, err := GetUserByID(id)
 		if err != nil {
-			http.Error(w, http.StatusText(404), 404)
+			http.Error(w, fmt.Sprint(err), 500)
 			return
 		}
 		ctx := context.WithValue(r.Context(), "user", n)
@@ -87,38 +95,29 @@ func userCtx(next http.Handler) http.Handler {
 	})
 }
 
-func GetUserByUsername(id string) (User, error) {
+func GetUserByUsername(id string) ([]User, error) {
 	data := make([]User, 0)
 	result := db.DB().Table("auth_user").Where("username = ?", id).Find(&data)
 	if result.Error != nil {
-		return User{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return User{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }
 
-func GetUserByEmail(id string) (User, error) {
+func GetUserByEmail(id string) ([]User, error) {
 	data := make([]User, 0)
 	result := db.DB().Table("auth_user").Where("email = ?", id).Find(&data)
 	if result.Error != nil {
-		return User{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return User{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }
 
-func GetUserByID(id string) (User, error) {
+func GetUserByID(id string) ([]User, error) {
 	data := make([]User, 0)
 	result := db.DB().Table("auth_user").Where("id = ?", id).Find(&data)
 	if result.Error != nil {
-		return User{}, result.Error
+		return data, result.Error
 	}
-	if len(data) == 0 {
-		return User{}, fmt.Errorf("not found")
-	}
-	return data[0], nil
+	return data, nil
 }
