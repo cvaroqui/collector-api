@@ -14,7 +14,7 @@
         },
         "version": "1.0"
     },
-    "basePath": "/",
+    "basePath": "/api",
     "paths": {
         "/auth/node/token": {
             "get": {
@@ -953,6 +953,7 @@
                     "application/json"
                 ],
                 "tags": [
+                    "tags",
                     "services"
                 ],
                 "summary": "Show a tag attachment to a service",
@@ -1228,6 +1229,7 @@
                     "application/json"
                 ],
                 "tags": [
+                    "tags",
                     "services"
                 ],
                 "summary": "Show a tag attachment to a service",

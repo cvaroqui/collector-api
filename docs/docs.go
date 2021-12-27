@@ -968,6 +968,7 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
+                    "tags",
                     "services"
                 ],
                 "summary": "Show a tag attachment to a service",
@@ -1243,6 +1244,7 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
+                    "tags",
                     "services"
                 ],
                 "summary": "Show a tag attachment to a service",
@@ -2615,7 +2617,7 @@ type swaggerInfo struct {
 var SwaggerInfo = swaggerInfo{
 	Version:     "1.0",
 	Host:        "",
-	BasePath:    "/",
+	BasePath:    "/api",
 	Schemes:     []string{},
 	Title:       "OpenSVC collector API",
 	Description: "Organization clusters, nodes, services and more.",

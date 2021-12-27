@@ -33,7 +33,7 @@ func fatal(err interface{}) {
 // @contact.email               collector-api-contact@opensvc.com
 // @license.name                Apache License 2.0
 // @license.url                 https://www.apache.org/licenses/LICENSE-2.0
-// @BasePath                    /
+// @BasePath                    /api
 // @securityDefinitions.basic   BasicAuth
 // @securityDefinitions.apikey  BearerAuth
 // @in                          header
@@ -133,6 +133,15 @@ func router() http.Handler {
 			r.Get("/", routes.GetTags)
 			r.Post("/", routes.PostTags)
 			r.Delete("/", routes.DelTags)
+		})
+		r.Route("/users", func(r chi.Router) {
+			r.Route("/{id}", func(r chi.Router) {
+				r.Use(tables.UserCtx)
+				r.Get("/", routes.GetUser)
+				r.Delete("/", routes.DelUser)
+			})
+			r.Get("/", routes.GetUsers)
+			r.Post("/", routes.PostUsers)
 		})
 	})
 

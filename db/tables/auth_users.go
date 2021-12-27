@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -82,22 +83,84 @@ func UserFromCtx(r *http.Request) []User {
 	return i.([]User)
 }
 
-func userCtx(next http.Handler) http.Handler {
+func UserCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
-		n, err := GetUserByID(id)
-		if err != nil {
-			http.Error(w, fmt.Sprint(err), 500)
-			return
+		if reID.MatchString(id) {
+			if n, err := readableGetUserByID(r, id); err == nil {
+				ctx := context.WithValue(r.Context(), "user", n)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			} else {
+				http.Error(w, fmt.Sprint(err), 500)
+				return
+			}
+		} else if _, err := mail.ParseAddress(id); err == nil {
+			if n, err := readableGetUserByEmail(r, id); err == nil {
+				ctx := context.WithValue(r.Context(), "user", n)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			} else {
+				http.Error(w, fmt.Sprint(err), 500)
+				return
+			}
+		} else {
+			if n, err := readableGetUserByUsername(r, id); err == nil {
+				ctx := context.WithValue(r.Context(), "user", n)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			} else {
+				http.Error(w, fmt.Sprint(err), 500)
+				return
+			}
 		}
-		ctx := context.WithValue(r.Context(), "user", n)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		http.Error(w, "unsupported node id format", 500)
 	})
+}
+
+func readableGetUserByUsername(r *http.Request, id string) ([]User, error) {
+	data := make([]User, 0)
+	tx := db.Tab("auth_user").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
+	).TX(r)
+	result := tx.Where("username = ?", id).Find(&data)
+	if result.Error != nil {
+		return data, result.Error
+	}
+	return data, nil
+}
+
+func readableGetUserByEmail(r *http.Request, id string) ([]User, error) {
+	data := make([]User, 0)
+	tx := db.Tab("auth_user").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
+	).TX(r)
+	result := tx.Where("email = ?", id).Find(&data)
+	if result.Error != nil {
+		return data, result.Error
+	}
+	return data, nil
+}
+
+func readableGetUserByID(r *http.Request, id string) ([]User, error) {
+	data := make([]User, 0)
+	tx := db.Tab("auth_user").Request(
+		db.TableRequestWithFilters(false),
+		db.TableRequestWithPaging(false),
+	).TX(r)
+	result := tx.Where("id = ?", id).Find(&data)
+	if result.Error != nil {
+		return data, result.Error
+	}
+	return data, nil
 }
 
 func GetUserByUsername(id string) ([]User, error) {
 	data := make([]User, 0)
-	result := db.DB().Table("auth_user").Where("username = ?", id).Find(&data)
+	tx := db.DB().Table("auth_user")
+	result := tx.Where("username = ?", id).Find(&data)
 	if result.Error != nil {
 		return data, result.Error
 	}
@@ -106,7 +169,8 @@ func GetUserByUsername(id string) ([]User, error) {
 
 func GetUserByEmail(id string) ([]User, error) {
 	data := make([]User, 0)
-	result := db.DB().Table("auth_user").Where("email = ?", id).Find(&data)
+	tx := db.DB().Table("auth_user")
+	result := tx.Where("email = ?", id).Find(&data)
 	if result.Error != nil {
 		return data, result.Error
 	}
@@ -115,7 +179,8 @@ func GetUserByEmail(id string) ([]User, error) {
 
 func GetUserByID(id string) ([]User, error) {
 	data := make([]User, 0)
-	result := db.DB().Table("auth_user").Where("id = ?", id).Find(&data)
+	tx := db.DB().Table("auth_user")
+	result := tx.Where("id = ?", id).Find(&data)
 	if result.Error != nil {
 		return data, result.Error
 	}

@@ -1,4 +1,4 @@
-basePath: /
+basePath: /api
 definitions:
   db.TableResponse:
     properties:
@@ -1089,6 +1089,7 @@ paths:
       - BearerAuth: []
       summary: Show a tag attachment to a service
       tags:
+      - tags
       - services
   /services/tags:
     get:
@@ -1174,6 +1175,7 @@ paths:
       - BearerAuth: []
       summary: Show a tag attachment to a service
       tags:
+      - tags
       - services
   /tags:
     delete:
