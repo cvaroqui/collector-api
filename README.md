@@ -41,11 +41,11 @@ Add a api container to an existing collector service:
 Get a JWT from node credentials:
 
 	PW=$(om node get --kw node.uuid)
-	TOKEN=$(curl -s -u "$HOSTNAME:$PW" -H "Content-Type: application/json" http://collector:8080/nodes/login | jq .token | sed "s/\"//g")
+	TOKEN=$(curl -s -u "$HOSTNAME:$PW" -H "Content-Type: application/json" https://collector/api/auth/nodes/login | jq .token | sed "s/\"//g")
 
 Use the API authenticating with this token:
 
-	curl -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "http://collector:8080/nodes"
+	curl -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "https://collector/api/nodes"
 
 Environment variables defaults
 ==============================

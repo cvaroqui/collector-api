@@ -65,83 +65,85 @@ func router() http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(middleware.Timeout(60 * time.Second))
-	r.Mount("/swagger", httpSwagger.WrapHandler)
+	r.Mount("/api/swagger", httpSwagger.WrapHandler)
 
 	// Protected routes
 	r.Group(func(r chi.Router) {
-		r.Use(auth.Middleware)
-		r.Route("/auth/node/token", func(r chi.Router) {
-			r.Get("/", routes.GetNodeToken)
-		})
-		r.Route("/auth/user/token", func(r chi.Router) {
-			r.Get("/", routes.GetUserToken)
-		})
-		r.Route("/nodes", func(r chi.Router) {
-			r.Route("/{id}", func(r chi.Router) {
-				r.Use(tables.NodeCtx)
-				r.Get("/candidate_tags", routes.GetNodeCandidateTags)
+		r.Route("/api", func(r chi.Router) {
+			r.Use(auth.Middleware)
+			r.Route("/auth/node/token", func(r chi.Router) {
+				r.Get("/", routes.GetNodeToken)
+			})
+			r.Route("/auth/user/token", func(r chi.Router) {
+				r.Get("/", routes.GetUserToken)
+			})
+			r.Route("/nodes", func(r chi.Router) {
+				r.Route("/{id}", func(r chi.Router) {
+					r.Use(tables.NodeCtx)
+					r.Get("/candidate_tags", routes.GetNodeCandidateTags)
+					r.Route("/tags", func(r chi.Router) {
+						r.Route("/{id}", func(r chi.Router) {
+							r.Use(tables.TagCtx)
+							r.Use(tables.NodeTagCtx)
+							r.Get("/", routes.GetNodeTag)
+						})
+						r.Get("/", routes.GetNodeTags)
+					})
+					r.Get("/", routes.GetNode)
+					r.Delete("/", routes.DelNode)
+					r.Post("/", routes.PostNode)
+				})
 				r.Route("/tags", func(r chi.Router) {
 					r.Route("/{id}", func(r chi.Router) {
-						r.Use(tables.TagCtx)
 						r.Use(tables.NodeTagCtx)
 						r.Get("/", routes.GetNodeTag)
 					})
-					r.Get("/", routes.GetNodeTags)
+					r.Get("/", routes.GetNodesTags)
 				})
-				r.Get("/", routes.GetNode)
-				r.Delete("/", routes.DelNode)
-				r.Post("/", routes.PostNode)
+				r.Get("/", routes.GetNodes)
+				r.Post("/", routes.PostNodes)
+			})
+			r.Route("/services", func(r chi.Router) {
+				r.Route("/{id}", func(r chi.Router) {
+					r.Use(tables.ServiceCtx)
+					r.Get("/candidate_tags", routes.GetServiceCandidateTags)
+					r.Get("/tags", routes.GetServiceTags)
+					r.Get("/", routes.GetService)
+				})
+				r.Route("/tags", func(r chi.Router) {
+					r.Route("/{id}", func(r chi.Router) {
+						r.Use(tables.ServiceTagCtx)
+						r.Get("/", routes.GetServiceTag)
+					})
+					r.Get("/", routes.GetServicesTags)
+				})
+				r.Get("/", routes.GetServices)
 			})
 			r.Route("/tags", func(r chi.Router) {
 				r.Route("/{id}", func(r chi.Router) {
-					r.Use(tables.NodeTagCtx)
-					r.Get("/", routes.GetNodeTag)
+					r.Use(tables.TagCtx)
+					r.Route("/nodes", func(r chi.Router) {
+						r.Get("/", routes.GetTagNodes)
+					})
+					r.Route("/services", func(r chi.Router) {
+						r.Get("/", routes.GetTagServices)
+					})
+					r.Get("/", routes.GetTag)
+					r.Delete("/", routes.DelTag)
 				})
-				r.Get("/", routes.GetNodesTags)
+				r.Get("/", routes.GetTags)
+				r.Post("/", routes.PostTags)
+				r.Delete("/", routes.DelTags)
 			})
-			r.Get("/", routes.GetNodes)
-			r.Post("/", routes.PostNodes)
-		})
-		r.Route("/services", func(r chi.Router) {
-			r.Route("/{id}", func(r chi.Router) {
-				r.Use(tables.ServiceCtx)
-				r.Get("/candidate_tags", routes.GetServiceCandidateTags)
-				r.Get("/tags", routes.GetServiceTags)
-				r.Get("/", routes.GetService)
-			})
-			r.Route("/tags", func(r chi.Router) {
+			r.Route("/users", func(r chi.Router) {
 				r.Route("/{id}", func(r chi.Router) {
-					r.Use(tables.ServiceTagCtx)
-					r.Get("/", routes.GetServiceTag)
+					r.Use(tables.UserCtx)
+					r.Get("/", routes.GetUser)
+					r.Delete("/", routes.DelUser)
 				})
-				r.Get("/", routes.GetServicesTags)
+				r.Get("/", routes.GetUsers)
+				r.Post("/", routes.PostUsers)
 			})
-			r.Get("/", routes.GetServices)
-		})
-		r.Route("/tags", func(r chi.Router) {
-			r.Route("/{id}", func(r chi.Router) {
-				r.Use(tables.TagCtx)
-				r.Route("/nodes", func(r chi.Router) {
-					r.Get("/", routes.GetTagNodes)
-				})
-				r.Route("/services", func(r chi.Router) {
-					r.Get("/", routes.GetTagServices)
-				})
-				r.Get("/", routes.GetTag)
-				r.Delete("/", routes.DelTag)
-			})
-			r.Get("/", routes.GetTags)
-			r.Post("/", routes.PostTags)
-			r.Delete("/", routes.DelTags)
-		})
-		r.Route("/users", func(r chi.Router) {
-			r.Route("/{id}", func(r chi.Router) {
-				r.Use(tables.UserCtx)
-				r.Get("/", routes.GetUser)
-				r.Delete("/", routes.DelUser)
-			})
-			r.Get("/", routes.GetUsers)
-			r.Post("/", routes.PostUsers)
 		})
 	})
 
