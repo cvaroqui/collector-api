@@ -209,3 +209,13 @@ func GetUserByID(id string) ([]User, error) {
 	}
 	return data, nil
 }
+
+func (t User) IsManager() bool {
+	var i int64
+	tx := db.DB().Table("auth_group")
+	tx = tx.Joins("JOIN auth_membership ON auth_group.id = auth_membership.group_id")
+	tx = tx.Where("auth_membership.user_id = ?", t.ID)
+	tx = tx.Where("auth_group.role = ?", "Manager")
+	tx.Count(&i)
+	return i == 1
+}

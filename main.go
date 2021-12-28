@@ -139,11 +139,11 @@ func router() http.Handler {
 				r.Route("/{id}", func(r chi.Router) {
 					r.Use(tables.UserCtx)
 					r.Route("/apps", func(r chi.Router) {
-						r.Route("/responsibles", func(r chi.Router) {
-							//r.Get("/", routes.GetUserAppsResponsibles)
+						r.Route("/responsible", func(r chi.Router) {
+							r.Get("/", routes.GetUserAppsResponsible)
 						})
-						r.Route("/publications", func(r chi.Router) {
-							//r.Get("/", routes.GetUserAppsPublications)
+						r.Route("/publication", func(r chi.Router) {
+							r.Get("/", routes.GetUserAppsPublication)
 						})
 					})
 					r.Route("/groups", func(r chi.Router) {
