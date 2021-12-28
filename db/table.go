@@ -366,6 +366,15 @@ func (t *request) withACL(user auth.Info) {
 	}
 }
 
+func txPeerUserIDS(user auth.Info) *gorm.DB {
+	groups := authuser.OrgGroups(user)
+	return db.Table("auth_user").
+		Joins("JOIN auth_membership on auth_user.id=auth_membership.user_id").
+		Joins("JOIN auth_group on auth_group.id=auth_membership.group_id").
+		Where("auth_group.role IN (?)", groups).
+		Select("DISTINCT auth_user.id")
+}
+
 func (t *request) withUserACL(user auth.Info) {
 	if authuser.HasPrivilege(user, "UserManager") {
 		return
@@ -375,9 +384,7 @@ func (t *request) withUserACL(user auth.Info) {
 		t.Where("id < 0")
 	} else {
 		// user auth
-		groups := authuser.OrgGroups(user)
-		t.AutoJoin("auth_group")
-		t.Where("auth_group.role IN (?)", groups)
+		t.Where("id IN (?)", txPeerUserIDS(user))
 	}
 }
 

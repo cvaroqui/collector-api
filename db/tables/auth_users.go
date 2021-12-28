@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/opensvc/collector-api/db"
+	"github.com/shaj13/go-guardian/v2/auth"
 	"gorm.io/gorm"
 )
 
@@ -86,6 +87,9 @@ func UserFromCtx(r *http.Request) []User {
 func UserCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
+		if id == "self" {
+			id = auth.User(r).GetID()
+		}
 		if reID.MatchString(id) {
 			if n, err := readableGetUserByID(r, id); err == nil {
 				ctx := context.WithValue(r.Context(), "user", n)
