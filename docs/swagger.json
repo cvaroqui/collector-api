@@ -2003,6 +2003,258 @@
                     }
                 }
             }
+        },
+        "/users/{id}/apps/publication": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Managers and UserManager are allowed to see all users' information.\nOthers can only see information for users in their organization groups.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List apps the user can read",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/apps/responsible": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Managers and UserManager are allowed to see all users' information.\nOthers can only see information for users in their organization groups.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List apps the user is a responsible of",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/groups": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Managers and UserManager are allowed to see all users' information.\nOthers can only see information for users in their organization groups.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List groups the user is a member of",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "properties to include, and optionally remap (comma separated)",
+                        "name": "props",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to group by (comma separated)",
+                        "name": "groupby",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "properties to order by (comma separated, prefix with '~' to reverse)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "property value filter (a, !a, a\u0026b, a|b, (a,b),  a%,  a%\u0026!ab%)",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of objets to include in response",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset of the first objet to include in response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "turn off metadata in response",
+                        "name": "meta",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/db.TableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {

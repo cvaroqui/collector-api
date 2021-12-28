@@ -1642,6 +1642,171 @@ paths:
       summary: Show a user
       tags:
       - users
+  /users/{id}/apps/publication:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Managers and UserManager are allowed to see all users' information.
+        Others can only see information for users in their organization groups.
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List apps the user can read
+      tags:
+      - users
+  /users/{id}/apps/responsible:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Managers and UserManager are allowed to see all users' information.
+        Others can only see information for users in their organization groups.
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List apps the user is a responsible of
+      tags:
+      - users
+  /users/{id}/groups:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Managers and UserManager are allowed to see all users' information.
+        Others can only see information for users in their organization groups.
+      parameters:
+      - description: properties to include, and optionally remap (comma separated)
+        in: query
+        name: props
+        type: string
+      - description: properties to group by (comma separated)
+        in: query
+        name: groupby
+        type: string
+      - description: properties to order by (comma separated, prefix with '~' to reverse)
+        in: query
+        name: order
+        type: string
+      - description: property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)
+        in: query
+        items:
+          type: string
+        name: filters
+        type: array
+      - description: number of objets to include in response
+        in: query
+        name: limit
+        type: integer
+      - description: offset of the first objet to include in response
+        in: query
+        name: offset
+        type: integer
+      - description: turn off metadata in response
+        in: query
+        name: meta
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.TableResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      - BearerAuth: []
+      summary: List groups the user is a member of
+      tags:
+      - users
 securityDefinitions:
   BasicAuth:
     type: basic

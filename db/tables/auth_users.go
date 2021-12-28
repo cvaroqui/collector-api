@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/opensvc/collector-api/authuser"
 	"github.com/opensvc/collector-api/db"
-	"github.com/shaj13/go-guardian/v2/auth"
 	"gorm.io/gorm"
 )
 
@@ -121,19 +119,12 @@ func UserCtx(next http.Handler) http.Handler {
 }
 
 func readableGetUserByUsername(r *http.Request, id string) ([]User, error) {
-	user := auth.User(r)
-	groups := authuser.OrgGroups(user)
 	data := make([]User, 0)
 	rq := db.Tab("auth_user").Request(
-		db.TableRequestWithACL(false),
 		db.TableRequestWithFilters(false),
 		db.TableRequestWithPaging(false),
 	)
 	tx := rq.TX(r).Where("auth_user.username = ?", id)
-	if !authuser.HasPrivilege(user, "UserManager") {
-		rq.AutoJoin("auth_group")
-		tx = tx.Where("auth_group.role in (?)", groups)
-	}
 	if err := tx.Find(&data).Error; err != nil {
 		return data, err
 	}
@@ -141,19 +132,12 @@ func readableGetUserByUsername(r *http.Request, id string) ([]User, error) {
 }
 
 func readableGetUserByEmail(r *http.Request, id string) ([]User, error) {
-	user := auth.User(r)
-	groups := authuser.OrgGroups(user)
 	data := make([]User, 0)
 	rq := db.Tab("auth_user").Request(
-		db.TableRequestWithACL(false),
 		db.TableRequestWithFilters(false),
 		db.TableRequestWithPaging(false),
 	)
 	tx := rq.TX(r).Where("auth_user.email = ?", id)
-	if !authuser.HasPrivilege(user, "UserManager") {
-		rq.AutoJoin("auth_group")
-		tx = tx.Where("auth_group.role in (?)", groups)
-	}
 	if err := tx.Find(&data).Error; err != nil {
 		return data, err
 	}
@@ -161,19 +145,12 @@ func readableGetUserByEmail(r *http.Request, id string) ([]User, error) {
 }
 
 func readableGetUserByID(r *http.Request, id string) ([]User, error) {
-	user := auth.User(r)
-	groups := authuser.OrgGroups(user)
 	data := make([]User, 0)
 	rq := db.Tab("auth_user").Request(
-		db.TableRequestWithACL(false),
 		db.TableRequestWithFilters(false),
 		db.TableRequestWithPaging(false),
 	)
 	tx := rq.TX(r).Where("auth_user.id = ?", id)
-	if !authuser.HasPrivilege(user, "UserManager") {
-		rq.AutoJoin("auth_group")
-		tx = tx.Where("auth_group.role in (?)", groups)
-	}
 	if err := tx.Find(&data).Error; err != nil {
 		return data, err
 	}

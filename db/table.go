@@ -354,10 +354,30 @@ func (t *request) withACL(user auth.Info) {
 	if !t.acl {
 		return
 	}
+	switch t.table.Name {
+	case "auth_user":
+		t.withUserACL(user)
+		return
+	}
 	if t.writeIntent {
 		t.withWriteACL(user)
 	} else {
 		t.withReadACL(user)
+	}
+}
+
+func (t *request) withUserACL(user auth.Info) {
+	if authuser.HasPrivilege(user, "UserManager") {
+		return
+	}
+	if _, err := strconv.Atoi(user.GetID()); err != nil {
+		// node auth
+		t.Where("id < 0")
+	} else {
+		// user auth
+		groups := authuser.OrgGroups(user)
+		t.AutoJoin("auth_group")
+		t.Where("auth_group.role IN (?)", groups)
 	}
 }
 
