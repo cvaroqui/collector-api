@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/opensvc/collector-api/authuser"
@@ -63,4 +64,48 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonEncode(w, users)
+}
+
+//
+// GetUserGroups     godoc
+// @Summary      List groups the user is a member of
+// @Description  Managers and UserManager are allowed to see all users' information.
+// @Description  Others can only see information for users in their organisational groups.
+// @Security     BasicAuth
+// @Security     BearerAuth
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Success      200      {object}  db.TableResponse
+// @Failure      500    {string}  string  "Internal Server Error"
+// @Param        props    query     string    false  "properties to include, and optionally remap (comma separated)"
+// @Param        groupby  query     string    false  "properties to group by (comma separated)"
+// @Param        order    query     string    false  "properties to order by (comma separated, prefix with '~' to reverse)"
+// @Param        filters  query     []string  false  "property value filter (a, !a, a&b, a|b, (a,b),  a%,  a%&!ab%)"
+// @Param        limit    query     int       false  "number of objets to include in response"
+// @Param        offset   query     int       false  "offset of the first objet to include in response"
+// @Param        meta     query     bool      false  "turn off metadata in response"
+// @Router       /users  [get]
+//
+func GetUserGroups(w http.ResponseWriter, r *http.Request) {
+	users := tables.UserFromCtx(r)
+	if len(users) == 0 {
+		http.Error(w, http.StatusText(404), 404)
+		return
+	}
+	u := users[0]
+	rq := db.Tab("auth_group").Request(
+		db.TableRequestWithACL(false),
+	)
+	rq.AutoJoin("auth_membership")
+	rq.Where("auth_membership.user_id = ?", u.ID)
+	td, err := rq.MakeTableResponse(r)
+	if err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+		return
+	}
+	if err := jsonEncode(w, td); err != nil {
+		http.Error(w, fmt.Sprint(err), 500)
+		return
+	}
 }

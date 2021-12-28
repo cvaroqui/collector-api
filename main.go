@@ -138,6 +138,18 @@ func router() http.Handler {
 			r.Route("/users", func(r chi.Router) {
 				r.Route("/{id}", func(r chi.Router) {
 					r.Use(tables.UserCtx)
+					r.Route("/apps", func(r chi.Router) {
+						r.Route("/responsibles", func(r chi.Router) {
+							//r.Get("/", routes.GetUserAppsResponsibles)
+						})
+						r.Route("/publications", func(r chi.Router) {
+							//r.Get("/", routes.GetUserAppsPublications)
+						})
+					})
+					r.Route("/groups", func(r chi.Router) {
+						r.Get("/", routes.GetUserGroups)
+					})
+					//r.Get("/dump", routes.GetUserDump)
 					r.Get("/", routes.GetUser)
 					r.Delete("/", routes.DelUser)
 				})

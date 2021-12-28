@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/opensvc/collector-api/authuser"
 	"github.com/opensvc/collector-api/db"
+	"github.com/shaj13/go-guardian/v2/auth"
 	"gorm.io/gorm"
 )
 
@@ -114,45 +116,66 @@ func UserCtx(next http.Handler) http.Handler {
 				return
 			}
 		}
-		http.Error(w, "unsupported node id format", 500)
+		http.Error(w, "unsupported user id format", 500)
 	})
 }
 
 func readableGetUserByUsername(r *http.Request, id string) ([]User, error) {
+	user := auth.User(r)
+	groups := authuser.OrgGroups(user)
 	data := make([]User, 0)
-	tx := db.Tab("auth_user").Request(
+	rq := db.Tab("auth_user").Request(
+		db.TableRequestWithACL(false),
 		db.TableRequestWithFilters(false),
 		db.TableRequestWithPaging(false),
-	).TX(r)
-	result := tx.Where("username = ?", id).Find(&data)
-	if result.Error != nil {
-		return data, result.Error
+	)
+	tx := rq.TX(r).Where("auth_user.username = ?", id)
+	if !authuser.HasPrivilege(user, "UserManager") {
+		rq.AutoJoin("auth_group")
+		tx = tx.Where("auth_group.role in (?)", groups)
+	}
+	if err := tx.Find(&data).Error; err != nil {
+		return data, err
 	}
 	return data, nil
 }
 
 func readableGetUserByEmail(r *http.Request, id string) ([]User, error) {
+	user := auth.User(r)
+	groups := authuser.OrgGroups(user)
 	data := make([]User, 0)
-	tx := db.Tab("auth_user").Request(
+	rq := db.Tab("auth_user").Request(
+		db.TableRequestWithACL(false),
 		db.TableRequestWithFilters(false),
 		db.TableRequestWithPaging(false),
-	).TX(r)
-	result := tx.Where("email = ?", id).Find(&data)
-	if result.Error != nil {
-		return data, result.Error
+	)
+	tx := rq.TX(r).Where("auth_user.email = ?", id)
+	if !authuser.HasPrivilege(user, "UserManager") {
+		rq.AutoJoin("auth_group")
+		tx = tx.Where("auth_group.role in (?)", groups)
+	}
+	if err := tx.Find(&data).Error; err != nil {
+		return data, err
 	}
 	return data, nil
 }
 
 func readableGetUserByID(r *http.Request, id string) ([]User, error) {
+	user := auth.User(r)
+	groups := authuser.OrgGroups(user)
 	data := make([]User, 0)
-	tx := db.Tab("auth_user").Request(
+	rq := db.Tab("auth_user").Request(
+		db.TableRequestWithACL(false),
 		db.TableRequestWithFilters(false),
 		db.TableRequestWithPaging(false),
-	).TX(r)
-	result := tx.Where("id = ?", id).Find(&data)
-	if result.Error != nil {
-		return data, result.Error
+	)
+	tx := rq.TX(r).Where("auth_user.id = ?", id)
+	if !authuser.HasPrivilege(user, "UserManager") {
+		rq.AutoJoin("auth_group")
+		tx = tx.Where("auth_group.role in (?)", groups)
+	}
+	if err := tx.Find(&data).Error; err != nil {
+		return data, err
 	}
 	return data, nil
 }

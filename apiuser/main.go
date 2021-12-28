@@ -42,7 +42,19 @@ func MakeNodeExtensions(node tables.Node) auth.Extensions {
 func MakeUserExtensions(user tables.User) auth.Extensions {
 	ext := make(auth.Extensions)
 	ext[authuser.XPrivileges] = getPrivileges(user.ID)
+	ext[authuser.XOrgGroups] = getOrgGroups(user.ID)
 	return ext
+}
+
+func getOrgGroups(id uint) []string {
+	var roles []string
+	db.DB().
+		Table("auth_group").
+		Joins("JOIN auth_membership ON auth_group.id = auth_membership.group_id").
+		Joins("JOIN auth_user ON auth_membership.user_id = auth_user.id").
+		Where("auth_group.role != ? AND auth_group.privilege = ? AND auth_user.id = ?", "Everybody", "F", id).
+		Pluck("role", &roles)
+	return roles
 }
 
 func getPrivileges(id uint) []string {

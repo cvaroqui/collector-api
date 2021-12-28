@@ -11,6 +11,7 @@ const (
 	XNodeID     string = "node_id"
 	XApp        string = "app"
 	XPrivileges string = "privileges"
+	XOrgGroups  string = "org_groups"
 )
 
 func IsManager(t auth.Info) bool {
@@ -32,6 +33,10 @@ func HasPrivilege(t auth.Info, priv string) bool {
 
 func Privileges(t auth.Info) []string {
 	return t.GetExtensions().Values(XPrivileges)
+}
+
+func OrgGroups(t auth.Info) []string {
+	return t.GetExtensions().Values(XOrgGroups)
 }
 
 func PrivError(w http.ResponseWriter, priv string) {
